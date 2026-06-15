@@ -348,6 +348,14 @@
     .day-chip:hover  { border-color: var(--dim); }
     .day-chip.active { border-color: var(--gold); background: #1f1610; }
 
+    .all-chip {
+      width: 82px;
+      letter-spacing: 1px;
+    }
+
+    .all-chip .chip-num { font-size: 10px; letter-spacing: 3px; }
+    .all-chip .chip-date { font-size: 9px; }
+
     .chip-num {
       font-size: 9px;
       color: #3a2810;
@@ -414,7 +422,7 @@
     <div id="map-area">
       <div id="map"></div>
       <div id="map-btns">
-        <button class="map-btn" id="fit-day-btn">fit day</button>
+        <button class="map-btn" id="fit-day-btn">fit view</button>
         <button class="map-btn" id="fit-all-btn">fit all</button>
       </div>
     </div>
@@ -525,7 +533,22 @@ const DAYS = [
   },
 ];
 
-let currentDay = 0;
+const TRIP_OVERVIEW = {
+  label: 'FULL TRIP · JUN 17–23',
+  summary: 'Charlottesville, VA → Independence, CA → Charlottesville, VA',
+  note: 'Escape → reset → witness → turnaround → return. Seven days, I-40 west and back, rest areas for beds. Same skeleton as every year. Different weight.',
+  stops: [
+    { name: 'Gray County, TX', desc: 'The threshold · where the trip becomes real · both ways', type: 'threshold' },
+    { name: 'Cadillac Ranch', desc: 'Day 3 · Amarillo, TX · deliberate curiosity', type: 'poi' },
+    { name: 'June Lake Loop', desc: 'Day 4 · Eastern Sierra · the sublime', type: 'scenic' },
+    { name: 'Independence, CA', desc: 'Day 4 · the turnaround · every time', type: 'pilgrimage' },
+    { name: 'Manzanar', desc: 'Day 4 · the witness stop · not tourism', type: 'reflection' },
+    { name: 'East & West Mitten Overlook', desc: 'Day 5 · Monument Valley', type: 'scenic' },
+    { name: '1897 Genesis Road, Crossville TN', desc: 'Day 7 · Celina 52 · and it\'s on Genesis Road', type: 'poi' },
+  ],
+};
+
+let currentView = -1;  // -1 = full trip overview, 0–6 = day index
 let map = null;
 let allPolylines = [];
 let allBounds = null;
@@ -597,7 +620,7 @@ async function init() {
 
   initMap(tracks, wpts);
   buildDayStrip();
-  selectDay(0, false);
+  selectView(-1, false);
 }
 
 /* ── Map ──────────────────────────────────────────────────── */
@@ -660,8 +683,12 @@ function initMap(tracks, wpts) {
   });
 
   document.getElementById('fit-day-btn').addEventListener('click', () => {
-    const pts = allPolylines[currentDay]?._pts;
-    if (pts?.length) map.fitBounds(L.latLngBounds(pts).pad(0.1));
+    if (currentView === -1) {
+      if (allBounds) map.fitBounds(allBounds.pad(0.06));
+    } else {
+      const pts = allPolylines[currentView]?._pts;
+      if (pts?.length) map.fitBounds(L.latLngBounds(pts).pad(0.1));
+    }
   });
 
   document.getElementById('fit-all-btn').addEventListener('click', () => {
@@ -673,6 +700,17 @@ function initMap(tracks, wpts) {
 
 function buildDayStrip() {
   $dayRow.innerHTML = '';
+
+  const allChip = document.createElement('div');
+  allChip.className = 'day-chip all-chip';
+  allChip.dataset.view = 'all';
+  allChip.innerHTML = `
+    <span class="chip-num">ALL</span>
+    <span class="chip-date">JUN 17–23</span>
+  `;
+  allChip.addEventListener('click', () => selectView(-1, true));
+  $dayRow.appendChild(allChip);
+
   DAYS.forEach((d, i) => {
     const parts = d.label.split('·');
     const chip = document.createElement('div');
@@ -683,44 +721,17 @@ function buildDayStrip() {
       <span class="chip-date">${(parts[1] || '').trim()}</span>
       <span class="chip-route">${d.from.split(',')[0]} → ${d.to.split(',')[0]}</span>
     `;
-    chip.addEventListener('click', () => selectDay(i, true));
+    chip.addEventListener('click', () => selectView(i, true));
     $dayRow.appendChild(chip);
   });
 }
 
-/* ── Select day ───────────────────────────────────────────── */
+/* ── Select view ──────────────────────────────────────────── */
 
-function selectDay(index, fitDay) {
-  currentDay = Math.max(0, Math.min(index, DAYS.length - 1));
-  const day = DAYS[currentDay];
-
-  allPolylines.forEach((poly, i) => {
-    const active = i === currentDay;
-    poly.setStyle({
-      color:   active ? '#c8893a' : '#5a3a18',
-      weight:  active ? 3.5 : 1.5,
-      opacity: active ? 0.92 : 0.35,
-    });
-    if (active) poly.bringToFront();
-  });
-
-  if (fitDay) {
-    const pts = allPolylines[currentDay]?._pts;
-    if (pts?.length) map.fitBounds(L.latLngBounds(pts).pad(0.1));
-  }
-
-  $dayLabel.textContent = day.label;
-
-  $routeSumm.innerHTML =
-    `<span style="color:var(--cream)">${day.from}</span>` +
-    `<span style="color:var(--dim)"> → </span>` +
-    `<span style="color:var(--cream)">${day.to}</span>`;
-
-  $routeNote.textContent = day.note;
-
+function renderStops(stops) {
   $stopsList.innerHTML = '';
-  day.stops.forEach((stop, idx) => {
-    const isLast = idx === day.stops.length - 1;
+  stops.forEach((stop, idx) => {
+    const isLast = idx === stops.length - 1;
     const row = document.createElement('div');
     row.className = 'stop-item';
     row.innerHTML = `
@@ -735,22 +746,83 @@ function selectDay(index, fitDay) {
     `;
     $stopsList.appendChild(row);
   });
+}
 
-  const pts = allPolylines[currentDay]?._pts;
-  if (pts?.length > 1) {
-    const mi = trackMiles(pts);
-    $distInfo.textContent = `~${mi.toLocaleString()} mi`;
+function selectView(index, fitMap) {
+  currentView = Math.max(-1, Math.min(index, DAYS.length - 1));
+  const chips = $dayRow.querySelectorAll('.day-chip');
+
+  if (currentView === -1) {
+    // ── Full trip overview ──────────────────────────────────
+    allPolylines.forEach(poly => {
+      poly.setStyle({ color: '#c8893a', weight: 2.5, opacity: 0.72 });
+    });
+
+    if (fitMap && allBounds) map.fitBounds(allBounds.pad(0.06));
+
+    $dayCounter.textContent = 'ALL 7 DAYS';
+
+    $dayLabel.textContent = TRIP_OVERVIEW.label;
+
+    $routeSumm.innerHTML =
+      `<span style="color:var(--cream)">Charlottesville, VA</span>` +
+      `<span style="color:var(--dim)"> → </span>` +
+      `<span style="color:var(--cream)">Independence, CA</span>` +
+      `<span style="color:var(--dim)"> → </span>` +
+      `<span style="color:var(--cream)">Charlottesville, VA</span>`;
+
+    $routeNote.textContent = TRIP_OVERVIEW.note;
+
+    renderStops(TRIP_OVERVIEW.stops);
+
+    const total = allPolylines.reduce((sum, poly) =>
+      sum + (poly._pts?.length > 1 ? trackMiles(poly._pts) : 0), 0);
+    $distInfo.textContent = total > 0 ? `~${total.toLocaleString()} mi total` : '';
+
+    chips.forEach((el, i) => el.classList.toggle('active', i === 0));
+    chips[0]?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+
   } else {
-    $distInfo.textContent = '';
-  }
+    // ── Single day ─────────────────────────────────────────
+    const day = DAYS[currentView];
 
-  document.querySelectorAll('.day-chip').forEach((el, i) => {
-    el.classList.toggle('active', i === currentDay);
-  });
+    allPolylines.forEach((poly, i) => {
+      const active = i === currentView;
+      poly.setStyle({
+        color:   active ? '#c8893a' : '#5a3a18',
+        weight:  active ? 3.5 : 1.5,
+        opacity: active ? 0.92 : 0.35,
+      });
+      if (active) poly.bringToFront();
+    });
 
-  const activeChip = $dayRow.querySelectorAll('.day-chip')[currentDay];
-  if (activeChip) {
-    $dayRow.scrollLeft = activeChip.offsetLeft - ($dayRow.clientWidth / 2) + (activeChip.offsetWidth / 2);
+    if (fitMap) {
+      const pts = allPolylines[currentView]?._pts;
+      if (pts?.length) map.fitBounds(L.latLngBounds(pts).pad(0.1));
+    }
+
+    $dayCounter.textContent = `DAY ${currentView + 1} OF 7`;
+
+    $dayLabel.textContent = day.label;
+
+    $routeSumm.innerHTML =
+      `<span style="color:var(--cream)">${day.from}</span>` +
+      `<span style="color:var(--dim)"> → </span>` +
+      `<span style="color:var(--cream)">${day.to}</span>`;
+
+    $routeNote.textContent = day.note;
+
+    renderStops(day.stops);
+
+    const pts = allPolylines[currentView]?._pts;
+    $distInfo.textContent = pts?.length > 1 ? `~${trackMiles(pts).toLocaleString()} mi` : '';
+
+    // chips[0] = ALL chip, chips[1–7] = days
+    chips.forEach((el, i) => el.classList.toggle('active', i === currentView + 1));
+    const activeChip = chips[currentView + 1];
+    if (activeChip) {
+      $dayRow.scrollLeft = activeChip.offsetLeft - ($dayRow.clientWidth / 2) + (activeChip.offsetWidth / 2);
+    }
   }
 }
 
@@ -760,21 +832,21 @@ document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.key === 'ArrowRight' || e.key === ' ') {
     e.preventDefault();
-    selectDay(currentDay + 1, true);
+    selectView(currentView + 1, true);
   } else if (e.key === 'ArrowLeft') {
     e.preventDefault();
-    selectDay(currentDay - 1, true);
+    selectView(currentView - 1, true);
   } else if (e.key === 'Home') {
     e.preventDefault();
-    selectDay(0, true);
+    selectView(-1, true);
   } else if (e.key === 'End') {
     e.preventDefault();
-    selectDay(DAYS.length - 1, true);
+    selectView(DAYS.length - 1, true);
   }
 });
 
-document.getElementById('btn-prev').addEventListener('click', () => selectDay(currentDay - 1, true));
-document.getElementById('btn-next').addEventListener('click', () => selectDay(currentDay + 1, true));
+document.getElementById('btn-prev').addEventListener('click', () => selectView(currentView - 1, true));
+document.getElementById('btn-next').addEventListener('click', () => selectView(currentView + 1, true));
 
 /* ── Boot ─────────────────────────────────────────────────── */
 
