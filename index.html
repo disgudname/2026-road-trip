@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>2026 Road Trip</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
   <style>
     :root {
       --bg:    #18100a;
@@ -92,25 +92,51 @@
       height: 100%;
     }
 
-    .leaflet-tile-pane {
-      filter: brightness(0.75) saturate(0.6);
-    }
-
-    .leaflet-control-attribution {
+    /* MapLibre attribution */
+    .maplibregl-ctrl-attrib {
       font-size: 9px !important;
       background: rgba(10,6,3,0.7) !important;
       color: #555 !important;
     }
 
-    .leaflet-control-attribution a { color: #666 !important; }
+    .maplibregl-ctrl-attrib a { color: #666 !important; }
 
-    .leaflet-control-zoom a {
+    /* MapLibre zoom control */
+    .maplibregl-ctrl-group {
       background: var(--panel) !important;
-      color: var(--gold) !important;
-      border-color: #2a1a08 !important;
+      border: 1px solid #2a1a08 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
     }
 
-    .leaflet-control-zoom a:hover { background: #2a1508 !important; }
+    .maplibregl-ctrl-group button {
+      background: transparent !important;
+      color: var(--gold) !important;
+      border-color: #2a1a08 !important;
+      border-radius: 0 !important;
+    }
+
+    .maplibregl-ctrl-group button:hover {
+      background: #2a1508 !important;
+    }
+
+    .maplibregl-ctrl-icon {
+      filter: invert(60%) sepia(40%) saturate(500%) hue-rotate(10deg) brightness(90%);
+    }
+
+    /* Map tooltip */
+    .map-tooltip {
+      position: fixed;
+      z-index: 9999;
+      pointer-events: none;
+      background: rgba(36,21,8,0.95);
+      border: 1px solid #3a2008;
+      color: var(--cream);
+      font-family: Georgia, serif;
+      font-size: 11px;
+      padding: 4px 9px;
+      white-space: nowrap;
+    }
 
     #map-btns {
       position: absolute;
@@ -136,21 +162,6 @@
 
     .map-btn:hover { color: var(--gold); border-color: #3a2008; }
     .map-btn.active { color: var(--gold); border-color: var(--gold); }
-
-    /* Tooltip overrides */
-    .leaflet-tooltip {
-      background: rgba(36,21,8,0.95) !important;
-      border: 1px solid #3a2008 !important;
-      color: var(--cream) !important;
-      font-family: Georgia, serif !important;
-      font-size: 11px !important;
-      padding: 4px 9px !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-    }
-
-    .leaflet-tooltip::before { border-right-color: #3a2008 !important; }
-    .leaflet-tooltip-left::before { border-left-color: #3a2008 !important; }
 
     /* ── Side panel ──────────────────────────────────────────── */
     #side-panel {
@@ -450,7 +461,7 @@
 
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
 'use strict';
 
@@ -550,9 +561,8 @@ const TRIP_OVERVIEW = {
 
 let currentView = -1;  // -1 = full trip overview, 0–6 = day index
 let map = null;
-let allPolylines = [];
-let allBounds = null;
-let wptMarkers = [];
+let trackPts = [];     // [lat, lon][] per track
+let allBounds = null;  // [[minLon, minLat], [maxLon, maxLat]]
 
 const $dayLabel   = document.getElementById('day-label');
 const $routeSumm  = document.getElementById('route-summary');
@@ -593,6 +603,300 @@ function departureStatus() {
   return { line1: '7 DAYS · JUN 17–23', line2: '2026' };
 }
 
+function ptsBounds(pts) {
+  const lats = pts.map(p => p[0]);
+  const lons = pts.map(p => p[1]);
+  return [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]];
+}
+
+/* ── EOC basemap dark theme config ───────────────────────── */
+
+const mapStyleConfig = {
+  styleUrl:             'https://tiles.openfreemap.org/styles/liberty',
+  textColor:            '#ffffff',
+  mutedText:            '#cbd8e8',
+  haloColor:            '#334052',
+  roadMinor:            '#2c3036',
+  roadMajor:            '#2c3036',
+  roadCasing:           '#494e58',
+  highwayColor:         '#5a7299',
+  roadRail:             '#3c4561',
+  landColor:            '#424d5c',
+  parkColor:            '#283a32',
+  waterColor:           '#5f7481',
+  buildingColor:        '#38414e',
+  boundaryColor:        '#a3a0ab',
+  backgroundColor:      '#424d5c',
+  buildingOutlineColor: 'rgba(22,27,33,0.55)',
+  surfaceOutlineColor:  'rgba(255,255,255,0.05)',
+};
+
+/* ── EOC theme transforms (verbatim from Pandemonium-Air-EOC) */
+
+function deepClone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function darkenOpenFreeMapStyle(style) {
+  const darkStyle = deepClone(style);
+  darkStyle.name = 'Road Trip Dark';
+
+  const LABEL_TEXT_SIZE_OVERRIDES = {
+    'label_city':         ['interpolate', ['exponential', 1.2], ['zoom'], 4, 13, 7, 15, 11, 20],
+    'label_city_capital': ['interpolate', ['exponential', 1.2], ['zoom'], 4, 14, 7, 16, 11, 22],
+    'label_town':         ['interpolate', ['exponential', 1.2], ['zoom'], 7, 14, 11, 16],
+    'label_village':      ['interpolate', ['exponential', 1.2], ['zoom'], 7, 12, 11, 14],
+    'label_state':        ['interpolate', ['linear'],           ['zoom'], 5, 12, 8, 16],
+    'label_country_1':    ['interpolate', ['linear'],           ['zoom'], 1, 11, 4, 19],
+    'label_country_2':    ['interpolate', ['linear'],           ['zoom'], 2, 11, 5, 19],
+    'label_country_3':    ['interpolate', ['linear'],           ['zoom'], 3, 11, 7, 19],
+  };
+
+  darkStyle.layers = (darkStyle.layers || []).map((layer) => {
+    const nextLayer = deepClone(layer);
+    const layerId   = String(nextLayer.id || '').toLowerCase();
+    const layerType = String(nextLayer.type || '').toLowerCase();
+    const paint  = nextLayer.paint || {};
+    const layout = nextLayer.layout || {};
+
+    if (LABEL_TEXT_SIZE_OVERRIDES[layerId] != null) {
+      layout['text-size'] = LABEL_TEXT_SIZE_OVERRIDES[layerId];
+    }
+
+    if (layerType === 'background') {
+      paint['background-color'] = mapStyleConfig.backgroundColor;
+    }
+
+    if (layerType === 'fill') {
+      if (layerId.includes('water')) paint['fill-color'] = mapStyleConfig.waterColor;
+      else if (/(park|forest|wood|grass|golf|pitch|cemetery|green)/.test(layerId)) {
+        paint['fill-color'] = mapStyleConfig.parkColor || '#344a45';
+        paint['fill-opacity'] = ['interpolate', ['linear'], ['zoom'], 0, 0.22, 7, 0.3, 12, 0.36];
+      }
+      else if (/(building|house)/.test(layerId)) paint['fill-color'] = mapStyleConfig.buildingColor;
+      else if (/(landuse|landcover|residential|industrial|commercial|aeroway)/.test(layerId)) paint['fill-color'] = mapStyleConfig.landColor;
+    }
+
+    if (layerType === 'fill-extrusion' && /(building|house)/.test(layerId)) {
+      paint['fill-extrusion-color'] = mapStyleConfig.buildingColor;
+      if (paint['fill-extrusion-base'] == null) paint['fill-extrusion-base'] = 0;
+    }
+
+    if (layerType === 'line') {
+      const isCasingLayer = layerId.includes('casing') || layerId.includes('outline');
+      if (isCasingLayer && mapStyleConfig.roadCasing) {
+        paint['line-color'] = mapStyleConfig.roadCasing;
+      }
+      else if (/(motorway|trunk|primary|major|highway)/.test(layerId)) paint['line-color'] = mapStyleConfig.roadMajor;
+      else if (/(rail|transit)/.test(layerId)) paint['line-color'] = mapStyleConfig.roadRail;
+      else if (/(water|river|stream)/.test(layerId)) paint['line-color'] = mapStyleConfig.waterColor;
+      else if (/(boundary|border)/.test(layerId)) paint['line-color'] = mapStyleConfig.boundaryColor;
+      else if (/(road|street|transport)/.test(layerId)) paint['line-color'] = mapStyleConfig.roadMinor;
+      const sourceLayer = String(nextLayer['source-layer'] || '').toLowerCase();
+      if (layerId.includes('park_outline') || sourceLayer === 'park') {
+        layout.visibility = 'none';
+      }
+    }
+
+    if (layerType === 'symbol') {
+      if (paint['text-color'] != null) {
+        paint['text-color'] = /(poi|housenumber|address|minor)/.test(layerId)
+          ? mapStyleConfig.mutedText
+          : mapStyleConfig.textColor;
+      }
+      if (paint['text-halo-color'] != null) paint['text-halo-color'] = mapStyleConfig.haloColor;
+      if (paint['icon-color']  != null) paint['icon-color']  = mapStyleConfig.mutedText;
+      if (/(poi|business|shop)/.test(layerId) && layout['text-size'] == null) layout['text-size'] = 11;
+    }
+
+    if (paint['fill-outline-color'] != null && /(building|landuse|park|water)/.test(layerId)) {
+      paint['fill-outline-color'] = /(building|house)/.test(layerId)
+        ? mapStyleConfig.buildingOutlineColor
+        : mapStyleConfig.surfaceOutlineColor;
+    }
+    if (paint['fill-extrusion-outline-color'] != null && /(building|house)/.test(layerId)) {
+      paint['fill-extrusion-outline-color'] = mapStyleConfig.buildingOutlineColor;
+    }
+
+    nextLayer.paint  = paint;
+    nextLayer.layout = layout;
+    return nextLayer;
+  });
+  return darkStyle;
+}
+
+function applyRasterLowZoomTuning(style) {
+  style.layers = (style.layers || []).map((layer) => {
+    const nextLayer = deepClone(layer);
+    const layerId   = String(nextLayer.id || '').toLowerCase();
+    const layerType = String(nextLayer.type || '').toLowerCase();
+    if (layerType !== 'raster') return nextLayer;
+    const paint = nextLayer.paint || {};
+    paint['raster-saturation']       = -0.9;
+    paint['raster-contrast']         = 0.18;
+    paint['raster-brightness-min']   = 0.04;
+    paint['raster-brightness-max']   = 0.34;
+    if (layerId.includes('natural_earth')) {
+      paint['raster-opacity'] = ['interpolate', ['exponential', 1.5], ['zoom'], 0, 0.26, 6, 0.04];
+    }
+    nextLayer.paint = paint;
+    return nextLayer;
+  });
+  return style;
+}
+
+function configuredHighwayColor() {
+  return String(mapStyleConfig.highwayColor || mapStyleConfig.roadMajor || '').trim();
+}
+
+function applyHighwayClassColor(style) {
+  const highwayColor = configuredHighwayColor();
+  if (!highwayColor) return style;
+  style.layers = (style.layers || []).map((layer) => {
+    const nextLayer = deepClone(layer);
+    const paint     = nextLayer.paint || {};
+    const layerId   = String(nextLayer.id || '').toLowerCase();
+    if (
+      String(nextLayer.type || '').toLowerCase() !== 'line' ||
+      String(nextLayer['source-layer'] || '').toLowerCase() !== 'transportation' ||
+      paint['line-color'] == null ||
+      layerId.includes('casing') ||
+      layerId.includes('outline')
+    ) {
+      return nextLayer;
+    }
+    const originalLineColor = paint['line-color'];
+    paint['line-color'] = [
+      'match', ['get', 'class'],
+      'motorway',      highwayColor,
+      'motorway_link', highwayColor,
+      'trunk',         highwayColor,
+      'trunk_link',    highwayColor,
+      'primary',       highwayColor,
+      'primary_link',  highwayColor,
+      originalLineColor,
+    ];
+    nextLayer.paint = paint;
+    return nextLayer;
+  });
+  return style;
+}
+
+function layerContainsRoadClass(layer, classes) {
+  const classList = Array.isArray(classes) ? classes.map(v => String(v).toLowerCase()) : [];
+  if (!classList.length) return false;
+  const layerId = String(layer && layer.id ? layer.id : '').toLowerCase();
+  if (classList.some(c => layerId.includes(c))) return true;
+  const filterText = JSON.stringify(layer && layer.filter ? layer.filter : '').toLowerCase();
+  return classList.some(c => filterText.includes(`"${c}"`));
+}
+
+function extendSmallRoadVisibility(style) {
+  style.layers = (style.layers || []).map((layer) => {
+    const nextLayer  = deepClone(layer);
+    const layerType  = String(nextLayer.type || '').toLowerCase();
+    const sourceLayer = String(nextLayer['source-layer'] || '').toLowerCase();
+    if (layerType !== 'line' || sourceLayer !== 'transportation') return nextLayer;
+    const paint = nextLayer.paint || {};
+    const hasRoadPaint = paint['line-color'] != null || paint['line-width'] != null;
+    if (!hasRoadPaint) return nextLayer;
+    const layerId = String(nextLayer.id || '').toLowerCase();
+    const isCasing = layerId.includes('casing');
+    const isSecondaryTertiary = layerContainsRoadClass(nextLayer, ['secondary', 'secondary_link', 'tertiary', 'tertiary_link']);
+    const isMinor = layerContainsRoadClass(nextLayer, ['minor', 'residential', 'living_street', 'unclassified']) || layerId.includes('road_minor');
+    if (!isSecondaryTertiary && !isMinor) return nextLayer;
+    if (isSecondaryTertiary) {
+      if (typeof nextLayer.minzoom === 'number' && nextLayer.minzoom > 8) nextLayer.minzoom = 8;
+      paint['line-width'] = ['interpolate', ['exponential', 1.18], ['zoom'],
+        7.8, 0,
+        8.6, isCasing ? 0.34 : 0.24,
+        10,  isCasing ? 0.82 : 0.58,
+        12,  isCasing ? 1.4  : 1.06,
+        20,  isCasing ? 14   : 13,
+      ];
+      if (paint['line-opacity'] != null) {
+        paint['line-opacity'] = ['interpolate', ['linear'], ['zoom'], 7.8, 0.3, 10, 0.74, 12, 0.9, 14, 1];
+      }
+    }
+    if (isMinor) {
+      if (typeof nextLayer.minzoom === 'number' && nextLayer.minzoom > 11) nextLayer.minzoom = 11;
+      paint['line-width'] = ['interpolate', ['exponential', 1.18], ['zoom'],
+        10.6, 0,
+        11.2, isCasing ? 0.24 : 0.16,
+        12.2, isCasing ? 0.42 : 0.3,
+        14,   isCasing ? 2.8  : 2.5,
+        20,   isCasing ? 19   : 18,
+      ];
+      if (paint['line-opacity'] != null) {
+        paint['line-opacity'] = ['interpolate', ['linear'], ['zoom'], 10.6, 0.32, 12.2, 0.62, 14, 0.92, 16, 1];
+      }
+    }
+    nextLayer.paint = paint;
+    return nextLayer;
+  });
+  return style;
+}
+
+function extendBoundaryVisibility(style) {
+  const existing = Array.isArray(style.layers) ? style.layers : [];
+  const layers = existing.filter(layer => {
+    const id = String(layer && layer.id ? layer.id : '');
+    return id !== 'rt-boundary-state' && id !== 'rt-boundary-county';
+  });
+  const borderColor = String(mapStyleConfig.boundaryColor || '#a3a0ab').trim();
+  const tunedLayers = layers.map(layer => {
+    const nextLayer = deepClone(layer);
+    const id = String(nextLayer && nextLayer.id ? nextLayer.id : '');
+    if (id === 'boundary_2' || id === 'boundary_3' || id === 'boundary_disputed') {
+      const layout = nextLayer.layout || {};
+      layout.visibility = 'none';
+      nextLayer.layout = layout;
+    }
+    return nextLayer;
+  });
+  const insertIndex = (() => {
+    const idx = tunedLayers.findIndex(l => {
+      const id = String(l && l.id ? l.id : '');
+      return id.startsWith('boundary_') || id === 'boundary_disputed';
+    });
+    return idx >= 0 ? idx : tunedLayers.length;
+  })();
+  const stateLayer = {
+    id: 'rt-boundary-state',
+    type: 'line',
+    source: 'openmaptiles',
+    'source-layer': 'boundary',
+    minzoom: 0,
+    filter: ['all', ['==', ['get', 'admin_level'], 4], ['!=', ['get', 'maritime'], 1], ['!=', ['get', 'disputed'], 1], ['!', ['has', 'claimed_by']]],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': borderColor,
+      'line-opacity': 0.9,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 0, 0.55, 3, 0.68, 6, 0.82, 10, 1.02, 14, 1.28, 18, 1.62],
+    },
+  };
+  const countyLayer = {
+    id: 'rt-boundary-county',
+    type: 'line',
+    source: 'openmaptiles',
+    'source-layer': 'boundary',
+    minzoom: 0,
+    filter: ['all',
+      ['any', ['==', ['get', 'admin_level'], 2], ['==', ['get', 'admin_level'], 3], ['==', ['get', 'admin_level'], 4], ['==', ['get', 'admin_level'], 5], ['==', ['get', 'admin_level'], 6]],
+      ['!=', ['get', 'maritime'], 1], ['!=', ['get', 'disputed'], 1], ['!', ['has', 'claimed_by']],
+    ],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': borderColor,
+      'line-opacity': 0.82,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 0, 0.42, 3, 0.52, 6, 0.64, 10, 0.8, 14, 0.98, 18, 1.26],
+    },
+  };
+  tunedLayers.splice(insertIndex, 0, countyLayer, stateLayer);
+  style.layers = tunedLayers;
+  return style;
+}
+
 /* ── Init ─────────────────────────────────────────────────── */
 
 async function init() {
@@ -618,81 +922,129 @@ async function init() {
     sym:  w.querySelector('sym')?.textContent || '',
   }));
 
-  initMap(tracks, wpts);
+  await initMap(tracks, wpts);
   buildDayStrip();
   selectView(-1, false);
 }
 
 /* ── Map ──────────────────────────────────────────────────── */
 
-function initMap(tracks, wpts) {
-  map = L.map('map', { zoomControl: true, attributionControl: true });
+async function initMap(tracks, wpts) {
+  // Fetch liberty style and apply EOC dark transforms
+  const baseStyle = await fetch('https://tiles.openfreemap.org/styles/liberty').then(r => r.json());
+  let style = darkenOpenFreeMapStyle(baseStyle);
+  style = applyRasterLowZoomTuning(style);
+  style = applyHighwayClassColor(style);
+  style = extendSmallRoadVisibility(style);
+  style = extendBoundaryVisibility(style);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© <a href="https://carto.com">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19,
-  }).addTo(map);
-
-  const allPts = [];
-  tracks.forEach((trk, i) => {
-    const poly = L.polyline(trk.pts, {
-      color: '#5a3a18',
-      weight: 2,
-      opacity: 0.5,
-    }).addTo(map);
-    poly._pts = trk.pts;
-    allPolylines.push(poly);
-    allPts.push(...trk.pts);
-  });
-
+  // Store pts for bounds/distance calculations
+  trackPts = tracks.map(t => t.pts);
+  const allPts = tracks.flatMap(t => t.pts);
   if (allPts.length) {
-    allBounds = L.latLngBounds(allPts);
-    map.fitBounds(allBounds.pad(0.06));
-  } else {
-    map.setView([37.5, -96], 4);
+    allBounds = ptsBounds(allPts);
   }
 
-  const seen = new Set();
-  wpts.forEach(w => {
-    const key = `${w.lat.toFixed(3)},${w.lon.toFixed(3)}`;
-    if (seen.has(key) || !w.name) return;
-    seen.add(key);
+  const center = allBounds
+    ? [(allBounds[0][0] + allBounds[1][0]) / 2, (allBounds[0][1] + allBounds[1][1]) / 2]
+    : [-96, 37.5];
 
-    const isHome    = w.sym === 'Flag, Blue';
-    const isLodging = w.sym === 'Lodging';
-    const isScenic  = w.sym === 'Scenic Area';
-
-    let color = '#c8893a';
-    if (isHome)    color = '#ff7040';
-    if (isLodging) color = '#6a5035';
-    if (isScenic)  color = '#ffe066';
-
-    const sz  = isHome || isScenic ? 10 : 8;
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="width:${sz}px;height:${sz}px;background:${color};border-radius:50%;border:1.5px solid rgba(255,255,255,0.18);box-shadow:0 0 6px rgba(0,0,0,0.7);"></div>`,
-      iconSize: [sz, sz],
-      iconAnchor: [sz/2, sz/2],
+  return new Promise((resolve) => {
+    map = new maplibregl.Map({
+      container: 'map',
+      style,
+      center,
+      zoom: 4,
+      attributionControl: true,
     });
 
-    const m = L.marker([w.lat, w.lon], { icon })
-      .bindTooltip(w.name, { permanent: false, offset: [8, 0] })
-      .addTo(map);
-    wptMarkers.push(m);
-  });
+    map.on('error', (e) => console.warn('[map]', e && e.error));
 
-  document.getElementById('fit-day-btn').addEventListener('click', () => {
-    if (currentView === -1) {
-      if (allBounds) map.fitBounds(allBounds.pad(0.06));
-    } else {
-      const pts = allPolylines[currentView]?._pts;
-      if (pts?.length) map.fitBounds(L.latLngBounds(pts).pad(0.1));
-    }
-  });
+    map.on('load', () => {
+      // Add one GeoJSON source + line layer per track (one per day)
+      tracks.forEach((trk, i) => {
+        map.addSource(`track-${i}`, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: trk.pts.map(([lat, lon]) => [lon, lat]),
+            },
+          },
+        });
+        map.addLayer({
+          id: `track-${i}`,
+          type: 'line',
+          source: `track-${i}`,
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': '#5a3a18',
+            'line-width': 2,
+            'line-opacity': 0.5,
+          },
+        });
+      });
 
-  document.getElementById('fit-all-btn').addEventListener('click', () => {
-    if (allBounds) map.fitBounds(allBounds.pad(0.06));
+      // Shared tooltip div for waypoint hover
+      const tooltipEl = document.createElement('div');
+      tooltipEl.className = 'map-tooltip';
+      tooltipEl.style.display = 'none';
+      document.body.appendChild(tooltipEl);
+
+      // Waypoint markers
+      const seen = new Set();
+      wpts.forEach(w => {
+        const key = `${w.lat.toFixed(3)},${w.lon.toFixed(3)}`;
+        if (seen.has(key) || !w.name) return;
+        seen.add(key);
+
+        const isHome    = w.sym === 'Flag, Blue';
+        const isLodging = w.sym === 'Lodging';
+        const isScenic  = w.sym === 'Scenic Area';
+
+        let color = '#c8893a';
+        if (isHome)    color = '#ff7040';
+        if (isLodging) color = '#6a5035';
+        if (isScenic)  color = '#ffe066';
+
+        const sz = isHome || isScenic ? 10 : 8;
+        const el = document.createElement('div');
+        el.style.cssText = `width:${sz}px;height:${sz}px;background:${color};border-radius:50%;border:1.5px solid rgba(255,255,255,0.18);box-shadow:0 0 6px rgba(0,0,0,0.7);cursor:pointer;`;
+
+        el.addEventListener('mouseenter', () => {
+          tooltipEl.textContent = w.name;
+          tooltipEl.style.display = 'block';
+        });
+        el.addEventListener('mousemove', (e) => {
+          tooltipEl.style.left = (e.clientX + 14) + 'px';
+          tooltipEl.style.top  = (e.clientY - 10) + 'px';
+        });
+        el.addEventListener('mouseleave', () => {
+          tooltipEl.style.display = 'none';
+        });
+
+        new maplibregl.Marker({ element: el })
+          .setLngLat([w.lon, w.lat])
+          .addTo(map);
+      });
+
+      // Fit/view buttons
+      document.getElementById('fit-day-btn').addEventListener('click', () => {
+        if (currentView === -1) {
+          if (allBounds) map.fitBounds(allBounds, { padding: 40 });
+        } else {
+          const pts = trackPts[currentView];
+          if (pts?.length) map.fitBounds(ptsBounds(pts), { padding: 60 });
+        }
+      });
+
+      document.getElementById('fit-all-btn').addEventListener('click', () => {
+        if (allBounds) map.fitBounds(allBounds, { padding: 40 });
+      });
+
+      resolve();
+    });
   });
 }
 
@@ -754,11 +1106,14 @@ function selectView(index, fitMap) {
 
   if (currentView === -1) {
     // ── Full trip overview ──────────────────────────────────
-    allPolylines.forEach(poly => {
-      poly.setStyle({ color: '#c8893a', weight: 2.5, opacity: 0.72 });
-    });
-
-    if (fitMap && allBounds) map.fitBounds(allBounds.pad(0.06));
+    if (map) {
+      trackPts.forEach((_, i) => {
+        map.setPaintProperty(`track-${i}`, 'line-color', '#c8893a');
+        map.setPaintProperty(`track-${i}`, 'line-width', 2.5);
+        map.setPaintProperty(`track-${i}`, 'line-opacity', 0.72);
+      });
+      if (fitMap && allBounds) map.fitBounds(allBounds, { padding: 40 });
+    }
 
     $dayCounter.textContent = 'ALL 7 DAYS';
 
@@ -775,8 +1130,8 @@ function selectView(index, fitMap) {
 
     renderStops(TRIP_OVERVIEW.stops);
 
-    const total = allPolylines.reduce((sum, poly) =>
-      sum + (poly._pts?.length > 1 ? trackMiles(poly._pts) : 0), 0);
+    const total = trackPts.reduce((sum, pts) =>
+      sum + (pts?.length > 1 ? trackMiles(pts) : 0), 0);
     $distInfo.textContent = total > 0 ? `~${total.toLocaleString()} mi total` : '';
 
     chips.forEach((el, i) => el.classList.toggle('active', i === 0));
@@ -786,19 +1141,18 @@ function selectView(index, fitMap) {
     // ── Single day ─────────────────────────────────────────
     const day = DAYS[currentView];
 
-    allPolylines.forEach((poly, i) => {
-      const active = i === currentView;
-      poly.setStyle({
-        color:   active ? '#c8893a' : '#5a3a18',
-        weight:  active ? 3.5 : 1.5,
-        opacity: active ? 0.92 : 0.35,
+    if (map) {
+      trackPts.forEach((_, i) => {
+        const active = i === currentView;
+        map.setPaintProperty(`track-${i}`, 'line-color',   active ? '#c8893a' : '#5a3a18');
+        map.setPaintProperty(`track-${i}`, 'line-width',   active ? 3.5 : 1.5);
+        map.setPaintProperty(`track-${i}`, 'line-opacity', active ? 0.92 : 0.35);
+        if (active) map.moveLayer(`track-${i}`);
       });
-      if (active) poly.bringToFront();
-    });
-
-    if (fitMap) {
-      const pts = allPolylines[currentView]?._pts;
-      if (pts?.length) map.fitBounds(L.latLngBounds(pts).pad(0.1));
+      if (fitMap) {
+        const pts = trackPts[currentView];
+        if (pts?.length) map.fitBounds(ptsBounds(pts), { padding: 80 });
+      }
     }
 
     $dayCounter.textContent = `DAY ${currentView + 1} OF 7`;
@@ -814,7 +1168,7 @@ function selectView(index, fitMap) {
 
     renderStops(day.stops);
 
-    const pts = allPolylines[currentView]?._pts;
+    const pts = trackPts[currentView];
     $distInfo.textContent = pts?.length > 1 ? `~${trackMiles(pts).toLocaleString()} mi` : '';
 
     // chips[0] = ALL chip, chips[1–7] = days
