@@ -11,8 +11,6 @@ claudeweb-response.jpeg
 page-2026-*.jpeg
 watchtower-*.jpeg
 
-# Generated thumbnails
-thumbs/
 
 # Temp compression artifacts
 *_new.mp4
