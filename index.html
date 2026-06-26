@@ -13,6 +13,7 @@
       --gold:  #c8893a;
       --cream: #f0dfc0;
       --dim:   #856848;
+      --polar: #fffef8;
       --dot:   #ff7040;
       --star:  #ffe066;
       --info:  #c09a6a;
@@ -52,25 +53,18 @@
       font-weight: normal;
     }
 
-    #subtitle {
-      font-size: 11px;
-      letter-spacing: 2px;
-      color: var(--dim);
-      font-style: italic;
-      margin-left: 10px;
-    }
-
-    #status-badge {
-      font-size: 12px;
+    #counter {
+      font-size: 13px;
       color: var(--dim);
       letter-spacing: 1px;
-      text-align: right;
     }
 
-    #day-counter {
+    #note-indicator {
       font-size: 11px;
-      color: var(--dim);
-      letter-spacing: 1px;
+      color: var(--gold);
+      display: none;
+      margin-left: 8px;
+      opacity: 0.7;
     }
 
     /* ── Main area ───────────────────────────────────────────── */
@@ -80,88 +74,116 @@
       min-height: 0;
     }
 
-    /* ── Map ─────────────────────────────────────────────────── */
-    #map-area {
+    /* ── Photo area ──────────────────────────────────────────── */
+    #photo-area {
       flex: 1;
       min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
       position: relative;
+      overflow: hidden;
     }
 
-    #map {
-      width: 100%;
-      height: 100%;
-    }
-
-    /* MapLibre attribution */
-    .maplibregl-ctrl-attrib {
-      font-size: 9px !important;
-      background: rgba(10,6,3,0.7) !important;
-      color: #555 !important;
-    }
-
-    .maplibregl-ctrl-attrib a { color: #666 !important; }
-
-    /* MapLibre zoom control */
-    .maplibregl-ctrl-group {
-      background: var(--panel) !important;
-      border: 1px solid #2a1a08 !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-    }
-
-    .maplibregl-ctrl-group button {
-      background: transparent !important;
-      color: var(--gold) !important;
-      border-color: #2a1a08 !important;
-      border-radius: 0 !important;
-    }
-
-    .maplibregl-ctrl-group button:hover {
-      background: #2a1508 !important;
-    }
-
-    .maplibregl-ctrl-icon {
-      filter: invert(60%) sepia(40%) saturate(500%) hue-rotate(10deg) brightness(90%);
-    }
-
-    /* Map tooltip */
-    .map-tooltip {
-      position: fixed;
-      z-index: 9999;
-      pointer-events: none;
-      background: rgba(36,21,8,0.95);
-      border: 1px solid #3a2008;
-      color: var(--cream);
-      font-family: Georgia, serif;
-      font-size: 11px;
-      padding: 4px 9px;
-      white-space: nowrap;
-    }
-
-    #map-btns {
+    #photo-area::before {
+      content: '';
       position: absolute;
-      top: 50px;
-      left: 10px;
-      z-index: 1000;
+      inset: 0;
+      background-image:
+        linear-gradient(#1c1810 1px, transparent 1px),
+        linear-gradient(90deg, #1c1810 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    #polaroid {
+      position: relative;
+      background: var(--polar);
+      padding: 13px 13px 54px 13px;
+      box-shadow: 8px 10px 28px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.5);
+      z-index: 1;
+      max-width: calc(100% - 40px);
+    }
+
+    #media-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    #photo-img {
+      display: block;
+      max-width: min(740px, 100%);
+      max-height: min(470px, calc(100vh - 280px));
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      transition: opacity 0.2s;
+    }
+
+    #photo-video {
+      display: none;
+      max-width: min(740px, 100%);
+      max-height: min(470px, calc(100vh - 280px));
+      width: auto;
+      height: auto;
+      background: #000;
+    }
+
+    #loading-spinner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(240,223,192,0.3);
+      font-size: 14px;
+      letter-spacing: 2px;
+      pointer-events: none;
+      display: none;
+    }
+
+    #star-badge {
+      position: absolute;
+      top: -10px;
+      right: 4px;
+      color: var(--star);
+      font-size: 22px;
+      line-height: 1;
+      text-shadow: 0 0 8px rgba(255,224,102,0.6);
+      display: none;
+    }
+
+    #photo-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 54px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
     }
 
-    .map-btn {
-      background: rgba(36,21,8,0.92);
-      color: var(--dim);
-      border: 1px solid #2a1a08;
-      font-family: Georgia, serif;
-      font-size: 10px;
-      letter-spacing: 1px;
-      padding: 5px 12px;
-      cursor: pointer;
+    #caption-loc {
+      font-size: 11px;
+      font-style: italic;
+      color: #55442a;
+      max-width: 95%;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .map-btn:hover { color: var(--gold); border-color: #3a2008; }
-    .map-btn.active { color: var(--gold); border-color: var(--gold); }
+    #caption-date {
+      font-size: 10px;
+      font-style: italic;
+      color: #887050;
+    }
 
     /* ── Side panel ──────────────────────────────────────────── */
     #side-panel {
@@ -170,116 +192,105 @@
       background: var(--panel);
       display: flex;
       flex-direction: column;
-      padding: 14px 16px 12px;
+      padding: 12px;
       gap: 10px;
       border-left: 1px solid #2a1a08;
     }
 
-    #day-label {
-      font-size: 11px;
-      color: var(--gold);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      border-bottom: 1px solid #2a1a08;
-      padding-bottom: 8px;
+    #map-container {
+      width: 100%;
+      height: 200px;
       flex-shrink: 0;
+      background: #0c0a07;
+      outline: 1px solid #2a1a08;
     }
 
-    #route-summary {
-      font-size: 15px;
-      color: var(--cream);
-      line-height: 1.4;
-      flex-shrink: 0;
+    /* MapLibre overrides */
+    .maplibregl-ctrl-attrib {
+      font-size: 9px !important;
+      background: rgba(10,6,3,0.7) !important;
+      color: #555 !important;
+    }
+    .maplibregl-ctrl-attrib a { color: #666 !important; }
+    .maplibregl-ctrl-group {
+      background: var(--panel) !important;
+      border: 1px solid #2a1a08 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      display: none;
     }
 
-    #route-note {
-      font-size: 12px;
-      color: var(--info);
-      font-style: italic;
-      line-height: 1.5;
-      flex-shrink: 0;
-    }
-
-    #stops-header {
-      font-size: 9px;
-      letter-spacing: 3px;
-      color: var(--dim);
-      text-transform: uppercase;
-      flex-shrink: 0;
-    }
-
-    #stops-list {
+    #info-panel {
       flex: 1;
       min-height: 0;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
+      gap: 6px;
       scrollbar-width: thin;
       scrollbar-color: #2a1a08 transparent;
     }
 
-    .stop-item {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
+    #day-badge {
+      font-size: 11px;
+      color: var(--gold);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #2a1a08;
+      padding-bottom: 6px;
     }
 
-    .stop-line {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex-shrink: 0;
-      width: 12px;
-    }
-
-    .stop-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      margin-top: 3px;
-    }
-
-    .stop-dot.home        { background: var(--dot); box-shadow: 0 0 6px rgba(255,112,64,0.5); }
-    .stop-dot.rest        { background: var(--dim); }
-    .stop-dot.scenic      { background: var(--star); box-shadow: 0 0 5px rgba(255,224,102,0.4); }
-    .stop-dot.poi         { background: var(--gold); }
-    .stop-dot.threshold   { background: #a87840; box-shadow: 0 0 5px rgba(168,120,64,0.5); }
-    .stop-dot.pilgrimage  { background: var(--gold); box-shadow: 0 0 7px rgba(200,137,58,0.7); }
-    .stop-dot.reflection  { background: #8898b8; box-shadow: 0 0 6px rgba(136,152,184,0.4); }
-
-    .stop-connector {
-      width: 1px;
-      flex: 1;
-      min-height: 14px;
-      background: #2a1a08;
-      margin: 3px 0;
-    }
-
-    .stop-content {
-      padding-bottom: 10px;
-    }
-
-    .stop-name {
-      font-size: 13px;
+    #location-text {
+      font-size: 15px;
       color: var(--cream);
       line-height: 1.3;
     }
 
-    .stop-desc {
-      font-size: 11px;
-      color: var(--info);
+    #date-text {
+      font-size: 12px;
       font-style: italic;
+      color: var(--dim);
+    }
+
+    #coords-text {
+      font-size: 11px;
+      color: #5a4030;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.3px;
+    }
+
+    #media-type-badge {
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--dim);
+      display: none;
+    }
+
+    #description-text {
+      font-size: 13px;
+      color: var(--info);
+      line-height: 1.6;
       margin-top: 2px;
     }
 
-    #dist-info {
-      font-size: 11px;
-      color: var(--dim);
+    #now-playing {
+      display: none;
+      font-size: 12px;
+      color: var(--gold);
+      opacity: 0.85;
+      font-style: italic;
+      margin-top: 6px;
+    }
+    #now-playing::before { content: '♫  '; font-style: normal; }
+
+    #day-summary {
+      font-size: 12px;
+      color: #6a5035;
+      line-height: 1.5;
       border-top: 1px solid #2a1a08;
-      padding-top: 8px;
-      letter-spacing: 0.5px;
-      flex-shrink: 0;
+      padding-top: 6px;
+      margin-top: 2px;
+      font-style: italic;
     }
 
     #nav-buttons {
@@ -287,6 +298,7 @@
       display: flex;
       justify-content: center;
       gap: 14px;
+      padding-top: 4px;
     }
 
     .nav-btn {
@@ -305,9 +317,9 @@
     .nav-btn:hover { background: #2a1508; }
     .nav-btn:active { background: var(--gold); color: var(--bg); }
 
-    /* ── Day strip ───────────────────────────────────────────── */
-    #day-strip {
-      height: 86px;
+    /* ── Film strip ──────────────────────────────────────────── */
+    #film-strip {
+      height: 110px;
       flex-shrink: 0;
       background: var(--strip);
       display: flex;
@@ -324,138 +336,336 @@
       background-position: 11px 0;
     }
 
-    #day-row {
+    #thumb-row {
       flex: 1;
       display: flex;
       align-items: center;
       overflow-x: auto;
       overflow-y: hidden;
-      gap: 4px;
-      padding: 0 14px;
+      gap: 3px;
+      padding: 0 10px;
       scrollbar-width: thin;
       scrollbar-color: #1a1008 var(--strip);
     }
 
-    #day-row::-webkit-scrollbar { height: 4px; }
-    #day-row::-webkit-scrollbar-track { background: var(--strip); }
-    #day-row::-webkit-scrollbar-thumb { background: #2a1808; }
+    #thumb-row::-webkit-scrollbar { height: 4px; }
+    #thumb-row::-webkit-scrollbar-track { background: var(--strip); }
+    #thumb-row::-webkit-scrollbar-thumb { background: #2a1808; }
 
-    .day-chip {
+    .thumb-item {
       flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 128px;
-      height: 56px;
+      width: 90px;
+      height: 68px;
       cursor: pointer;
       border: 2px solid #1a1208;
+      position: relative;
+      overflow: hidden;
       background: #1a1208;
       transition: border-color 0.15s;
-      padding: 5px 8px;
-      gap: 1px;
     }
 
-    .day-chip:hover  { border-color: var(--dim); }
-    .day-chip.active { border-color: var(--gold); background: #1f1610; }
+    .thumb-item:hover  { border-color: var(--dim); }
+    .thumb-item.active { border-color: var(--gold); }
 
-    .all-chip {
-      width: 82px;
-      letter-spacing: 1px;
+    .thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
-    .all-chip .chip-num { font-size: 10px; letter-spacing: 3px; }
-    .all-chip .chip-date { font-size: 9px; }
-
-    .chip-num {
-      font-size: 9px;
-      color: #7a5838;
-      letter-spacing: 2px;
-      text-transform: uppercase;
+    .thumb-day-sep {
+      flex-shrink: 0;
+      width: 1px;
+      height: 50px;
+      background: #2a1808;
+      margin: 0 4px;
+      align-self: center;
     }
 
-    .day-chip.active .chip-num { color: var(--gold); }
-
-    .chip-date {
-      font-size: 10px;
-      color: #6a4828;
-    }
-
-    .day-chip.active .chip-date { color: var(--dim); }
-
-    .chip-route {
-      font-size: 10px;
-      color: #5a3c22;
-      text-align: center;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .thumb-day-sep::after {
+      content: attr(data-day);
+      position: absolute;
+      font-size: 8px;
+      color: #3a2010;
+      letter-spacing: 0.5px;
       white-space: nowrap;
-      max-width: 116px;
+      transform: translateX(-50%) translateY(-18px);
+      left: 50%;
     }
 
-    .day-chip.active .chip-route { color: var(--info); }
-
-    /* ── Mobile ──────────────────────────────────────────────── */
+    /* ── Mobile layout ───────────────────────────────────────── */
     @media (max-width: 900px) {
       #main { flex-direction: column; }
 
       #side-panel {
         width: 100%;
         height: auto;
-        max-height: 220px;
         flex-shrink: 0;
         border-left: none;
         border-top: 1px solid #2a1a08;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px;
       }
 
-      #day-strip { height: 74px; }
+      #map-container { width: 100%; height: 140px; }
 
-      .day-chip { width: 108px; height: 48px; }
+      #info-panel { width: 100%; max-height: 120px; }
+
+      #nav-buttons { width: 100%; }
+
+      #film-strip { height: 80px; }
+
+      .thumb-item { width: 70px; height: 52px; }
+
+      #photo-area { padding: 10px; }
+
+      #polaroid { padding: 8px 8px 40px 8px; }
+
+      #photo-img, #photo-video {
+        max-width: 100%;
+        max-height: min(300px, calc(100vw - 40px));
+      }
+
+      #photo-caption { height: 40px; }
+
+      #day-summary { display: none; }
     }
+
+    /* ── Notes overlay ──────────────────────────────────────── */
+    #notes-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      gap: 10px;
+      z-index: 9999;
+      border-left: 1px solid #2a1a08;
+    }
+
+    #notes-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 1px solid #2a1a08;
+      padding-bottom: 8px;
+      flex-shrink: 0;
+    }
+
+    #notes-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--gold);
+      text-transform: uppercase;
+    }
+
+    #notes-hint {
+      font-size: 10px;
+      color: var(--dim);
+      font-style: italic;
+    }
+
+    #notes-item-name {
+      font-size: 12px;
+      color: var(--dim);
+      font-style: italic;
+      flex-shrink: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #notes-textarea {
+      flex: 1;
+      background: #0e0905;
+      border: 1px solid #2a1a08;
+      color: var(--cream);
+      font-family: Georgia, serif;
+      font-size: 13px;
+      line-height: 1.65;
+      padding: 10px 12px;
+      resize: none;
+      outline: none;
+      scrollbar-width: thin;
+      scrollbar-color: #2a1a08 transparent;
+    }
+
+    #notes-textarea:focus { border-color: #4a2808; }
+    #notes-textarea::placeholder { color: #3a2810; font-style: italic; }
+
+    #notes-saved {
+      font-size: 10px;
+      color: var(--dim);
+      text-align: right;
+      flex-shrink: 0;
+      height: 14px;
+      letter-spacing: 1px;
+      transition: opacity 0.4s;
+    }
+
+    .thumb-note {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 6px;
+      height: 6px;
+      background: var(--gold);
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(0,0,0,0.8);
+    }
+
+    /* ── Export modal ───────────────────────────────────────── */
+    #export-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,6,3,0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    #export-panel {
+      background: var(--panel);
+      border: 1px solid #3a2008;
+      width: min(700px, 94vw);
+      height: min(540px, 88vh);
+      display: flex;
+      flex-direction: column;
+      padding: 18px;
+      gap: 12px;
+    }
+
+    #export-header {
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--gold);
+      text-transform: uppercase;
+      border-bottom: 1px solid #2a1a08;
+      padding-bottom: 10px;
+      flex-shrink: 0;
+    }
+
+    #export-subhead {
+      font-size: 11px;
+      color: var(--dim);
+      font-style: italic;
+      margin-top: -4px;
+      flex-shrink: 0;
+    }
+
+    #export-text {
+      flex: 1;
+      background: #0e0905;
+      border: 1px solid #2a1a08;
+      color: var(--info);
+      font-family: Georgia, serif;
+      font-size: 12px;
+      line-height: 1.7;
+      padding: 12px;
+      resize: none;
+      outline: none;
+      scrollbar-width: thin;
+      scrollbar-color: #2a1a08 transparent;
+    }
+
+    #export-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-shrink: 0;
+    }
+
+    #export-buttons button {
+      background: var(--bg);
+      color: var(--gold);
+      border: 1px solid #3a2008;
+      font-family: Georgia, serif;
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 7px 22px;
+      cursor: pointer;
+    }
+
+    #export-buttons button:hover { background: #2a1508; }
+    #export-copy-done { color: var(--dim); font-size: 11px; align-self: center; margin-right: auto; display: none; }
   </style>
 </head>
 <body>
 <div id="app">
 
   <header id="top-bar">
-    <div style="display:flex;align-items:baseline;">
-      <span id="title">2026 ROAD TRIP</span>
-      <span id="subtitle">· the reset trip</span>
-    </div>
-    <div id="status-badge">
-      <div id="departure-line"></div>
-      <div id="day-counter"></div>
-    </div>
+    <span id="title">2026 ROAD TRIP</span>
+    <span id="counter">— / —<span id="note-indicator">✎</span></span>
   </header>
 
   <div id="main">
 
-    <div id="map-area">
-      <div id="map"></div>
-      <div id="map-btns">
-        <button class="map-btn" id="fit-day-btn">fit view</button>
-        <button class="map-btn" id="fit-all-btn">fit all</button>
+    <div id="photo-area">
+      <div id="polaroid">
+        <div id="media-container">
+          <img id="photo-img" alt="" />
+          <video id="photo-video" playsinline loop></video>
+          <div id="loading-spinner">loading…</div>
+        </div>
+        <div id="star-badge">★</div>
+        <div id="photo-caption">
+          <span id="caption-loc"></span>
+          <span id="caption-date"></span>
+        </div>
       </div>
     </div>
 
-    <aside id="side-panel">
-      <div id="day-label"></div>
-      <div id="route-summary"></div>
-      <div id="route-note"></div>
-      <div id="stops-header">STOPS</div>
-      <div id="stops-list"></div>
-      <div id="dist-info"></div>
+    <aside id="side-panel" style="position:relative">
+      <div id="map-container"></div>
+      <div id="info-panel">
+        <div id="day-badge"></div>
+        <div id="location-text"></div>
+        <div id="date-text"></div>
+        <div id="coords-text"></div>
+        <div id="media-type-badge">&#9654; VIDEO</div>
+        <div id="description-text"></div>
+        <div id="now-playing"></div>
+        <div id="day-summary"></div>
+      </div>
       <div id="nav-buttons">
-        <button class="nav-btn" id="btn-prev" title="Previous day (←)">◀</button>
-        <button class="nav-btn" id="btn-next" title="Next day (→)">▶</button>
+        <button class="nav-btn" id="btn-prev" title="Previous (&#8592;)">&#9664;</button>
+        <button class="nav-btn" id="btn-next" title="Next (&#8594; or Space)">&#9654;</button>
+      </div>
+
+      <div id="notes-overlay" style="display:none">
+        <div id="notes-header">
+          <span id="notes-label">✎ Notes</span>
+          <span id="notes-hint">N or Esc to close · E to export all</span>
+        </div>
+        <div id="notes-item-name"></div>
+        <textarea id="notes-textarea" placeholder="What do you remember about this one? Why did you stop the car?"></textarea>
+        <div id="notes-saved"></div>
       </div>
     </aside>
 
   </div>
 
-  <div id="day-strip">
+  <div id="export-overlay" style="display:none">
+    <div id="export-panel">
+      <div id="export-header">Notes Export</div>
+      <div id="export-subhead">Paste this into Claude to update captions.</div>
+      <textarea id="export-text" readonly spellcheck="false"></textarea>
+      <div id="export-buttons">
+        <span id="export-copy-done">copied ✓</span>
+        <button id="export-copy-btn">Copy All</button>
+        <button id="export-close-btn">Close (Esc)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="film-strip">
     <div class="sprocket-row"></div>
-    <div id="day-row"></div>
+    <div id="thumb-row"></div>
     <div class="sprocket-row"></div>
   </div>
 
@@ -465,751 +675,506 @@
 <script>
 'use strict';
 
-const DAYS = [
-  {
-    label: 'DAY 1 · WED JUN 17',
-    from: 'Charlottesville, VA',
-    to: 'Forrest City, AR',
-    note: 'Trip #5. Same road, same ritual — different weight. Head west on I-64, pick up I-40 at Cookeville, push into Arkansas.',
-    stops: [
-      { name: 'Charlottesville, VA', desc: 'Home base · depart afternoon', type: 'home' },
-      { name: 'Forrest City Rest Area', desc: 'I-40 West, AR · sleep', type: 'rest' },
-    ],
-  },
-  {
-    label: 'DAY 2 · THU JUN 18',
-    from: 'Forrest City, AR',
-    to: 'Gray County, TX',
-    note: 'West on I-40 through Oklahoma into the Texas panhandle. The road opens up. Something shifts.',
-    stops: [
-      { name: 'Forrest City Rest Area', desc: 'I-40, AR · wake up', type: 'rest' },
-      { name: 'Gray County Safety Rest Area', desc: 'I-40 West, TX · a known quantity · the trip becomes real here · sleep', type: 'threshold' },
-    ],
-  },
-  {
-    label: 'DAY 3 · FRI JUN 19',
-    from: 'Gray County, TX',
-    to: 'Millers Rest Area, NV',
-    note: 'Cadillac Ranch at dawn. Then a long straight push west — New Mexico, Arizona, Nevada.',
-    stops: [
-      { name: 'Gray County Rest Area', desc: 'TX · wake up', type: 'rest' },
-      { name: 'Cadillac Ranch', desc: 'Amarillo, TX · deliberate curiosity · Route 66', type: 'poi' },
-      { name: 'Millers Rest Area', desc: 'Nevada · sleep', type: 'rest' },
-    ],
-  },
-  {
-    label: 'DAY 4 · SAT JUN 20',
-    from: 'Millers, NV',
-    to: 'Meteor Crater, AZ',
-    note: 'The emotional core of the trip. The Sierra at its most sublime, then Manzanar on the same road the same afternoon — by design.',
-    stops: [
-      { name: 'Millers Rest Area', desc: 'Nevada · wake up', type: 'rest' },
-      { name: 'June Lake Loop', desc: 'Eastern Sierra · just north of Mono Lake · the sublime', type: 'scenic' },
-      { name: 'Independence, CA', desc: 'The turnaround · touch the wall · every time · no overnight this year', type: 'pilgrimage' },
-      { name: 'Manzanar', desc: 'More than 10,000 Japanese Americans incarcerated here · not a side trip · not tourism', type: 'reflection' },
-      { name: 'Meteor Crater Rest Area', desc: 'AZ · sleep', type: 'rest' },
-    ],
-  },
-  {
-    label: 'DAY 5 · SUN JUN 21',
-    from: 'Meteor Crater, AZ',
-    to: 'Gray County, TX',
-    note: 'Monument Valley at golden hour. Then the long night run east — the trip begins folding back on itself.',
-    stops: [
-      { name: 'Meteor Crater Rest Area', desc: 'AZ · wake up', type: 'rest' },
-      { name: 'East & West Mitten Overlook', desc: 'Monument Valley · the iconic view', type: 'scenic' },
-      { name: 'Gray County Safety Rest Area', desc: 'I-40, TX · the threshold again · now heading home · sleep', type: 'threshold' },
-    ],
-  },
-  {
-    label: 'DAY 6 · MON JUN 22',
-    from: 'Gray County, TX',
-    to: 'Forrest City, AR',
-    note: 'The mirror of Day 2. Same road, direction reversed. The western life recedes. Arkansas arrives.',
-    stops: [
-      { name: 'Gray County Rest Area', desc: 'TX · wake up · direction: east', type: 'rest' },
-      { name: 'Forrest City Rest Area', desc: 'I-40, AR · sleep', type: 'rest' },
-    ],
-  },
-  {
-    label: 'DAY 7 · TUE JUN 23',
-    from: 'Forrest City, AR',
-    to: 'Charlottesville, VA',
-    note: 'Final day. Nashville, the Tennessee mountains, the Shenandoah. One deliberate stop before home.',
-    stops: [
-      { name: 'Forrest City Rest Area', desc: 'AR · wake up', type: 'rest' },
-      { name: '1897 Genesis Road, Crossville TN', desc: 'Celina 52 filming location · and it\'s on Genesis Road', type: 'poi' },
-      { name: 'Charlottesville, VA', desc: 'Home · the reset complete', type: 'home' },
-    ],
-  },
-];
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-const TRIP_OVERVIEW = {
-  label: 'FULL TRIP · JUN 17–23',
-  summary: 'Charlottesville, VA → Independence, CA → Charlottesville, VA',
-  note: 'Escape → reset → witness → turnaround → return. Seven days, I-40 west and back, rest areas for beds. Same skeleton as every year. Different weight.',
-  stops: [
-    { name: 'Gray County, TX', desc: 'The threshold · where the trip becomes real · both ways', type: 'threshold' },
-    { name: 'Cadillac Ranch', desc: 'Day 3 · Amarillo, TX · deliberate curiosity', type: 'poi' },
-    { name: 'June Lake Loop', desc: 'Day 4 · Eastern Sierra · the sublime', type: 'scenic' },
-    { name: 'Independence, CA', desc: 'Day 4 · the turnaround · every time', type: 'pilgrimage' },
-    { name: 'Manzanar', desc: 'Day 4 · the witness stop · not tourism', type: 'reflection' },
-    { name: 'East & West Mitten Overlook', desc: 'Day 5 · Monument Valley', type: 'scenic' },
-    { name: '1897 Genesis Road, Crossville TN', desc: 'Day 7 · Celina 52 · and it\'s on Genesis Road', type: 'poi' },
-  ],
-};
+let catalog     = [];
+let dayIndex    = {};
+let highlights  = new Set();
+let currentIndex = 0;
+let map = null, routeLayer = null, photoMarker = null;
+let mapReady = false;
 
-let currentView = -1;  // -1 = full trip overview, 0–6 = day index
-let map = null;
-let trackPts = [];     // [lat, lon][] per track
-let allBounds = null;  // [[minLon, minLat], [maxLon, maxLat]]
+const NOTES_KEY = 'roadtrip2026_notes';
+let notes = {};
+try { notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}'); } catch(e) {}
+let notesMode = false;
+let saveTimer = null;
 
-const $dayLabel   = document.getElementById('day-label');
-const $routeSumm  = document.getElementById('route-summary');
-const $routeNote  = document.getElementById('route-note');
-const $stopsList  = document.getElementById('stops-list');
-const $distInfo   = document.getElementById('dist-info');
-const $dayRow     = document.getElementById('day-row');
-const $dayCounter = document.getElementById('day-counter');
-const $departureLn= document.getElementById('departure-line');
+const $counter       = document.getElementById('counter');
+const $noteIndicator = document.getElementById('note-indicator');
+const $notesOverlay  = document.getElementById('notes-overlay');
+const $notesItemName = document.getElementById('notes-item-name');
+const $notesTextarea = document.getElementById('notes-textarea');
+const $notesSaved    = document.getElementById('notes-saved');
+const $exportOverlay = document.getElementById('export-overlay');
+const $exportText    = document.getElementById('export-text');
+const $exportCopyBtn = document.getElementById('export-copy-btn');
+const $exportCopyDone= document.getElementById('export-copy-done');
+const $exportCloseBtn= document.getElementById('export-close-btn');
+const $img      = document.getElementById('photo-img');
+const $video    = document.getElementById('photo-video');
+const $spinner  = document.getElementById('loading-spinner');
+const $star     = document.getElementById('star-badge');
+const $capLoc   = document.getElementById('caption-loc');
+const $capDate  = document.getElementById('caption-date');
+const $dayBadge = document.getElementById('day-badge');
+const $locText  = document.getElementById('location-text');
+const $dateText = document.getElementById('date-text');
+const $coordsTxt= document.getElementById('coords-text');
+const $vidBadge = document.getElementById('media-type-badge');
+const $desc       = document.getElementById('description-text');
+const $nowPlaying = document.getElementById('now-playing');
+const $daySumm    = document.getElementById('day-summary');
+const $thumbRow = document.getElementById('thumb-row');
 
-/* ── Helpers ──────────────────────────────────────────────── */
-
-function haversine(a, b) {
-  const R = 3958.8;
-  const dLat = (b[0] - a[0]) * Math.PI / 180;
-  const dLon = (b[1] - a[1]) * Math.PI / 180;
-  const s = Math.sin(dLat/2)**2 + Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R * 2 * Math.asin(Math.sqrt(s));
+function fmtDate(ts) {
+  if (!ts) return '';
+  const m = ts.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
+  if (!m) return '';
+  return `${MONTHS[parseInt(m[2])-1]} ${parseInt(m[3])}, ${m[1]}  ·  ${m[4]}`;
 }
 
-function trackMiles(pts) {
-  let d = 0;
-  for (let i = 1; i < pts.length; i++) d += haversine(pts[i-1], pts[i]);
-  return Math.round(d);
+function fmtCoords(lat, lon) {
+  if (lat == null || lon == null) return '';
+  const la = Math.abs(lat).toFixed(4) + '° ' + (lat >= 0 ? 'N' : 'S');
+  const lo = Math.abs(lon).toFixed(4) + '° ' + (lon >= 0 ? 'E' : 'W');
+  return la + ',  ' + lo;
 }
-
-function departureStatus() {
-  const now = new Date();
-  const depart = new Date('2026-06-17T13:00:00');
-  const end    = new Date('2026-06-24T06:00:00');
-  if (now < depart) {
-    const days = Math.ceil((depart - now) / 86400000);
-    return { line1: `DEPARTING JUN 17`, line2: `T−${days} DAY${days !== 1 ? 'S' : ''}` };
-  }
-  if (now < end) {
-    return { line1: 'IN PROGRESS', line2: 'JUN 17–23, 2026' };
-  }
-  return { line1: '7 DAYS · JUN 17–23', line2: '2026' };
-}
-
-function ptsBounds(pts) {
-  const lats = pts.map(p => p[0]);
-  const lons = pts.map(p => p[1]);
-  return [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]];
-}
-
-/* ── EOC basemap dark theme config ───────────────────────── */
-
-const mapStyleConfig = {
-  styleUrl:             'https://tiles.openfreemap.org/styles/liberty',
-  textColor:            '#ffffff',
-  mutedText:            '#cbd8e8',
-  haloColor:            '#334052',
-  roadMinor:            '#2c3036',
-  roadMajor:            '#2c3036',
-  roadCasing:           '#494e58',
-  highwayColor:         '#5a7299',
-  roadRail:             '#3c4561',
-  landColor:            '#424d5c',
-  parkColor:            '#283a32',
-  waterColor:           '#5f7481',
-  buildingColor:        '#38414e',
-  boundaryColor:        '#a3a0ab',
-  backgroundColor:      '#424d5c',
-  buildingOutlineColor: 'rgba(22,27,33,0.55)',
-  surfaceOutlineColor:  'rgba(255,255,255,0.05)',
-};
-
-/* ── EOC theme transforms (verbatim from Pandemonium-Air-EOC) */
-
-function deepClone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
-function darkenOpenFreeMapStyle(style) {
-  const darkStyle = deepClone(style);
-  darkStyle.name = 'Road Trip Dark';
-
-  const LABEL_TEXT_SIZE_OVERRIDES = {
-    'label_city':         ['interpolate', ['exponential', 1.2], ['zoom'], 4, 13, 7, 15, 11, 20],
-    'label_city_capital': ['interpolate', ['exponential', 1.2], ['zoom'], 4, 14, 7, 16, 11, 22],
-    'label_town':         ['interpolate', ['exponential', 1.2], ['zoom'], 7, 14, 11, 16],
-    'label_village':      ['interpolate', ['exponential', 1.2], ['zoom'], 7, 12, 11, 14],
-    'label_state':        ['interpolate', ['linear'],           ['zoom'], 5, 12, 8, 16],
-    'label_country_1':    ['interpolate', ['linear'],           ['zoom'], 1, 11, 4, 19],
-    'label_country_2':    ['interpolate', ['linear'],           ['zoom'], 2, 11, 5, 19],
-    'label_country_3':    ['interpolate', ['linear'],           ['zoom'], 3, 11, 7, 19],
-  };
-
-  darkStyle.layers = (darkStyle.layers || []).map((layer) => {
-    const nextLayer = deepClone(layer);
-    const layerId   = String(nextLayer.id || '').toLowerCase();
-    const layerType = String(nextLayer.type || '').toLowerCase();
-    const paint  = nextLayer.paint || {};
-    const layout = nextLayer.layout || {};
-
-    if (LABEL_TEXT_SIZE_OVERRIDES[layerId] != null) {
-      layout['text-size'] = LABEL_TEXT_SIZE_OVERRIDES[layerId];
-    }
-
-    if (layerType === 'background') {
-      paint['background-color'] = mapStyleConfig.backgroundColor;
-    }
-
-    if (layerType === 'fill') {
-      if (layerId.includes('water')) paint['fill-color'] = mapStyleConfig.waterColor;
-      else if (/(park|forest|wood|grass|golf|pitch|cemetery|green)/.test(layerId)) {
-        paint['fill-color'] = mapStyleConfig.parkColor || '#344a45';
-        paint['fill-opacity'] = ['interpolate', ['linear'], ['zoom'], 0, 0.22, 7, 0.3, 12, 0.36];
-      }
-      else if (/(building|house)/.test(layerId)) paint['fill-color'] = mapStyleConfig.buildingColor;
-      else if (/(landuse|landcover|residential|industrial|commercial|aeroway)/.test(layerId)) paint['fill-color'] = mapStyleConfig.landColor;
-    }
-
-    if (layerType === 'fill-extrusion' && /(building|house)/.test(layerId)) {
-      paint['fill-extrusion-color'] = mapStyleConfig.buildingColor;
-      if (paint['fill-extrusion-base'] == null) paint['fill-extrusion-base'] = 0;
-    }
-
-    if (layerType === 'line') {
-      const isCasingLayer = layerId.includes('casing') || layerId.includes('outline');
-      if (isCasingLayer && mapStyleConfig.roadCasing) {
-        paint['line-color'] = mapStyleConfig.roadCasing;
-      }
-      else if (/(motorway|trunk|primary|major|highway)/.test(layerId)) paint['line-color'] = mapStyleConfig.roadMajor;
-      else if (/(rail|transit)/.test(layerId)) paint['line-color'] = mapStyleConfig.roadRail;
-      else if (/(water|river|stream)/.test(layerId)) paint['line-color'] = mapStyleConfig.waterColor;
-      else if (/(boundary|border)/.test(layerId)) paint['line-color'] = mapStyleConfig.boundaryColor;
-      else if (/(road|street|transport)/.test(layerId)) paint['line-color'] = mapStyleConfig.roadMinor;
-      const sourceLayer = String(nextLayer['source-layer'] || '').toLowerCase();
-      if (layerId.includes('park_outline') || sourceLayer === 'park') {
-        layout.visibility = 'none';
-      }
-    }
-
-    if (layerType === 'symbol') {
-      if (paint['text-color'] != null) {
-        paint['text-color'] = /(poi|housenumber|address|minor)/.test(layerId)
-          ? mapStyleConfig.mutedText
-          : mapStyleConfig.textColor;
-      }
-      if (paint['text-halo-color'] != null) paint['text-halo-color'] = mapStyleConfig.haloColor;
-      if (paint['icon-color']  != null) paint['icon-color']  = mapStyleConfig.mutedText;
-      if (/(poi|business|shop)/.test(layerId) && layout['text-size'] == null) layout['text-size'] = 11;
-    }
-
-    if (paint['fill-outline-color'] != null && /(building|landuse|park|water)/.test(layerId)) {
-      paint['fill-outline-color'] = /(building|house)/.test(layerId)
-        ? mapStyleConfig.buildingOutlineColor
-        : mapStyleConfig.surfaceOutlineColor;
-    }
-    if (paint['fill-extrusion-outline-color'] != null && /(building|house)/.test(layerId)) {
-      paint['fill-extrusion-outline-color'] = mapStyleConfig.buildingOutlineColor;
-    }
-
-    nextLayer.paint  = paint;
-    nextLayer.layout = layout;
-    return nextLayer;
-  });
-  return darkStyle;
-}
-
-function applyRasterLowZoomTuning(style) {
-  style.layers = (style.layers || []).map((layer) => {
-    const nextLayer = deepClone(layer);
-    const layerId   = String(nextLayer.id || '').toLowerCase();
-    const layerType = String(nextLayer.type || '').toLowerCase();
-    if (layerType !== 'raster') return nextLayer;
-    const paint = nextLayer.paint || {};
-    paint['raster-saturation']       = -0.9;
-    paint['raster-contrast']         = 0.18;
-    paint['raster-brightness-min']   = 0.04;
-    paint['raster-brightness-max']   = 0.34;
-    if (layerId.includes('natural_earth')) {
-      paint['raster-opacity'] = ['interpolate', ['exponential', 1.5], ['zoom'], 0, 0.26, 6, 0.04];
-    }
-    nextLayer.paint = paint;
-    return nextLayer;
-  });
-  return style;
-}
-
-function configuredHighwayColor() {
-  return String(mapStyleConfig.highwayColor || mapStyleConfig.roadMajor || '').trim();
-}
-
-function applyHighwayClassColor(style) {
-  const highwayColor = configuredHighwayColor();
-  if (!highwayColor) return style;
-  style.layers = (style.layers || []).map((layer) => {
-    const nextLayer = deepClone(layer);
-    const paint     = nextLayer.paint || {};
-    const layerId   = String(nextLayer.id || '').toLowerCase();
-    if (
-      String(nextLayer.type || '').toLowerCase() !== 'line' ||
-      String(nextLayer['source-layer'] || '').toLowerCase() !== 'transportation' ||
-      paint['line-color'] == null ||
-      layerId.includes('casing') ||
-      layerId.includes('outline')
-    ) {
-      return nextLayer;
-    }
-    const originalLineColor = paint['line-color'];
-    paint['line-color'] = [
-      'match', ['get', 'class'],
-      'motorway',      highwayColor,
-      'motorway_link', highwayColor,
-      'trunk',         highwayColor,
-      'trunk_link',    highwayColor,
-      'primary',       highwayColor,
-      'primary_link',  highwayColor,
-      originalLineColor,
-    ];
-    nextLayer.paint = paint;
-    return nextLayer;
-  });
-  return style;
-}
-
-function layerContainsRoadClass(layer, classes) {
-  const classList = Array.isArray(classes) ? classes.map(v => String(v).toLowerCase()) : [];
-  if (!classList.length) return false;
-  const layerId = String(layer && layer.id ? layer.id : '').toLowerCase();
-  if (classList.some(c => layerId.includes(c))) return true;
-  const filterText = JSON.stringify(layer && layer.filter ? layer.filter : '').toLowerCase();
-  return classList.some(c => filterText.includes(`"${c}"`));
-}
-
-function extendSmallRoadVisibility(style) {
-  style.layers = (style.layers || []).map((layer) => {
-    const nextLayer  = deepClone(layer);
-    const layerType  = String(nextLayer.type || '').toLowerCase();
-    const sourceLayer = String(nextLayer['source-layer'] || '').toLowerCase();
-    if (layerType !== 'line' || sourceLayer !== 'transportation') return nextLayer;
-    const paint = nextLayer.paint || {};
-    const hasRoadPaint = paint['line-color'] != null || paint['line-width'] != null;
-    if (!hasRoadPaint) return nextLayer;
-    const layerId = String(nextLayer.id || '').toLowerCase();
-    const isCasing = layerId.includes('casing');
-    const isSecondaryTertiary = layerContainsRoadClass(nextLayer, ['secondary', 'secondary_link', 'tertiary', 'tertiary_link']);
-    const isMinor = layerContainsRoadClass(nextLayer, ['minor', 'residential', 'living_street', 'unclassified']) || layerId.includes('road_minor');
-    if (!isSecondaryTertiary && !isMinor) return nextLayer;
-    if (isSecondaryTertiary) {
-      if (typeof nextLayer.minzoom === 'number' && nextLayer.minzoom > 8) nextLayer.minzoom = 8;
-      paint['line-width'] = ['interpolate', ['exponential', 1.18], ['zoom'],
-        7.8, 0,
-        8.6, isCasing ? 0.34 : 0.24,
-        10,  isCasing ? 0.82 : 0.58,
-        12,  isCasing ? 1.4  : 1.06,
-        20,  isCasing ? 14   : 13,
-      ];
-      if (paint['line-opacity'] != null) {
-        paint['line-opacity'] = ['interpolate', ['linear'], ['zoom'], 7.8, 0.3, 10, 0.74, 12, 0.9, 14, 1];
-      }
-    }
-    if (isMinor) {
-      if (typeof nextLayer.minzoom === 'number' && nextLayer.minzoom > 11) nextLayer.minzoom = 11;
-      paint['line-width'] = ['interpolate', ['exponential', 1.18], ['zoom'],
-        10.6, 0,
-        11.2, isCasing ? 0.24 : 0.16,
-        12.2, isCasing ? 0.42 : 0.3,
-        14,   isCasing ? 2.8  : 2.5,
-        20,   isCasing ? 19   : 18,
-      ];
-      if (paint['line-opacity'] != null) {
-        paint['line-opacity'] = ['interpolate', ['linear'], ['zoom'], 10.6, 0.32, 12.2, 0.62, 14, 0.92, 16, 1];
-      }
-    }
-    nextLayer.paint = paint;
-    return nextLayer;
-  });
-  return style;
-}
-
-function extendBoundaryVisibility(style) {
-  const existing = Array.isArray(style.layers) ? style.layers : [];
-  const layers = existing.filter(layer => {
-    const id = String(layer && layer.id ? layer.id : '');
-    return id !== 'rt-boundary-state' && id !== 'rt-boundary-county';
-  });
-  const borderColor = String(mapStyleConfig.boundaryColor || '#a3a0ab').trim();
-  const tunedLayers = layers.map(layer => {
-    const nextLayer = deepClone(layer);
-    const id = String(nextLayer && nextLayer.id ? nextLayer.id : '');
-    if (id === 'boundary_2' || id === 'boundary_3' || id === 'boundary_disputed') {
-      const layout = nextLayer.layout || {};
-      layout.visibility = 'none';
-      nextLayer.layout = layout;
-    }
-    return nextLayer;
-  });
-  const insertIndex = (() => {
-    const idx = tunedLayers.findIndex(l => {
-      const id = String(l && l.id ? l.id : '');
-      return id.startsWith('boundary_') || id === 'boundary_disputed';
-    });
-    return idx >= 0 ? idx : tunedLayers.length;
-  })();
-  const stateLayer = {
-    id: 'rt-boundary-state',
-    type: 'line',
-    source: 'openmaptiles',
-    'source-layer': 'boundary',
-    minzoom: 0,
-    filter: ['all', ['==', ['get', 'admin_level'], 4], ['!=', ['get', 'maritime'], 1], ['!=', ['get', 'disputed'], 1], ['!', ['has', 'claimed_by']]],
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: {
-      'line-color': borderColor,
-      'line-opacity': 0.9,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 0, 0.55, 3, 0.68, 6, 0.82, 10, 1.02, 14, 1.28, 18, 1.62],
-    },
-  };
-  const countyLayer = {
-    id: 'rt-boundary-county',
-    type: 'line',
-    source: 'openmaptiles',
-    'source-layer': 'boundary',
-    minzoom: 0,
-    filter: ['all',
-      ['any', ['==', ['get', 'admin_level'], 2], ['==', ['get', 'admin_level'], 3], ['==', ['get', 'admin_level'], 4], ['==', ['get', 'admin_level'], 5], ['==', ['get', 'admin_level'], 6]],
-      ['!=', ['get', 'maritime'], 1], ['!=', ['get', 'disputed'], 1], ['!', ['has', 'claimed_by']],
-    ],
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: {
-      'line-color': borderColor,
-      'line-opacity': 0.82,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 0, 0.42, 3, 0.52, 6, 0.64, 10, 0.8, 14, 0.98, 18, 1.26],
-    },
-  };
-  tunedLayers.splice(insertIndex, 0, countyLayer, stateLayer);
-  style.layers = tunedLayers;
-  return style;
-}
-
-/* ── Init ─────────────────────────────────────────────────── */
 
 async function init() {
-  const { line1, line2 } = departureStatus();
-  $departureLn.textContent = line1;
-  $dayCounter.textContent  = line2;
+  const [cat, days, routeRaw] = await Promise.all([
+    fetch('web_catalog.json').then(r => r.json()),
+    fetch('day_by_day.json').then(r => r.json()),
+    fetch('route_pts.json').then(r => r.json()),
+  ]);
 
-  const gpxText = await fetch('The_2026_Reset_Trip.gpx').then(r => r.text());
-  const doc = new DOMParser().parseFromString(gpxText, 'text/xml');
+  catalog = cat.sort((a, b) => Date.parse(a.sort_ts) - Date.parse(b.sort_ts));
 
-  const tracks = [...doc.querySelectorAll('trk')].map(trk => ({
-    name: trk.querySelector('name')?.textContent || '',
-    pts: [...trk.querySelectorAll('trkpt')].map(pt => [
-      parseFloat(pt.getAttribute('lat')),
-      parseFloat(pt.getAttribute('lon')),
-    ]),
-  }));
-
-  const wpts = [...doc.querySelectorAll('wpt')].map(w => ({
-    lat: parseFloat(w.getAttribute('lat')),
-    lon: parseFloat(w.getAttribute('lon')),
-    name: w.querySelector('name')?.textContent || w.querySelector('cmt')?.textContent || '',
-    sym:  w.querySelector('sym')?.textContent || '',
-  }));
-
-  await initMap(tracks, wpts);
-  buildDayStrip();
-  selectView(-1, false);
-}
-
-/* ── Map ──────────────────────────────────────────────────── */
-
-async function initMap(tracks, wpts) {
-  // Fetch liberty style and apply EOC dark transforms
-  const baseStyle = await fetch('https://tiles.openfreemap.org/styles/liberty').then(r => r.json());
-  let style = darkenOpenFreeMapStyle(baseStyle);
-  style = applyRasterLowZoomTuning(style);
-  style = applyHighwayClassColor(style);
-  style = extendSmallRoadVisibility(style);
-  style = extendBoundaryVisibility(style);
-
-  // Store pts for bounds/distance calculations
-  trackPts = tracks.map(t => t.pts);
-  const allPts = tracks.flatMap(t => t.pts);
-  if (allPts.length) {
-    allBounds = ptsBounds(allPts);
+  for (const d of days) {
+    dayIndex[d.day] = d;
+    const raw = (d.highlight || '').split('—')[0].trim().split(' ')[0].trim();
+    if (raw) highlights.add(raw);
   }
 
-  const center = allBounds
-    ? [(allBounds[0][0] + allBounds[1][0]) / 2, (allBounds[0][1] + allBounds[1][1]) / 2]
-    : [-96, 37.5];
-
-  return new Promise((resolve) => {
-    map = new maplibregl.Map({
-      container: 'map',
-      style,
-      center,
-      zoom: 4,
-      attributionControl: true,
-    });
-
-    map.on('error', (e) => console.warn('[map]', e && e.error));
-
-    map.on('load', () => {
-      // Add one GeoJSON source + line layer per track (one per day)
-      tracks.forEach((trk, i) => {
-        map.addSource(`track-${i}`, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: {
-              type: 'LineString',
-              coordinates: trk.pts.map(([lat, lon]) => [lon, lat]),
-            },
-          },
-        });
-        map.addLayer({
-          id: `track-${i}`,
-          type: 'line',
-          source: `track-${i}`,
-          layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: {
-            'line-color': '#5a3a18',
-            'line-width': 2,
-            'line-opacity': 0.5,
-          },
-        });
-      });
-
-      // Shared tooltip div for waypoint hover
-      const tooltipEl = document.createElement('div');
-      tooltipEl.className = 'map-tooltip';
-      tooltipEl.style.display = 'none';
-      document.body.appendChild(tooltipEl);
-
-      // Waypoint markers
-      const seen = new Set();
-      wpts.forEach(w => {
-        const key = `${w.lat.toFixed(3)},${w.lon.toFixed(3)}`;
-        if (seen.has(key) || !w.name) return;
-        seen.add(key);
-
-        const isHome    = w.sym === 'Flag, Blue';
-        const isLodging = w.sym === 'Lodging';
-        const isScenic  = w.sym === 'Scenic Area';
-
-        let color = '#c8893a';
-        if (isHome)    color = '#ff7040';
-        if (isLodging) color = '#6a5035';
-        if (isScenic)  color = '#ffe066';
-
-        const sz = isHome || isScenic ? 10 : 8;
-        const el = document.createElement('div');
-        el.style.cssText = `width:${sz}px;height:${sz}px;background:${color};border-radius:50%;border:1.5px solid rgba(255,255,255,0.18);box-shadow:0 0 6px rgba(0,0,0,0.7);cursor:pointer;`;
-
-        el.addEventListener('mouseenter', () => {
-          tooltipEl.textContent = w.name;
-          tooltipEl.style.display = 'block';
-        });
-        el.addEventListener('mousemove', (e) => {
-          tooltipEl.style.left = (e.clientX + 14) + 'px';
-          tooltipEl.style.top  = (e.clientY - 10) + 'px';
-        });
-        el.addEventListener('mouseleave', () => {
-          tooltipEl.style.display = 'none';
-        });
-
-        new maplibregl.Marker({ element: el })
-          .setLngLat([w.lon, w.lat])
-          .addTo(map);
-      });
-
-      // Fit/view buttons
-      document.getElementById('fit-day-btn').addEventListener('click', () => {
-        if (currentView === -1) {
-          if (allBounds) map.fitBounds(allBounds, { padding: 40 });
-        } else {
-          const pts = trackPts[currentView];
-          if (pts?.length) map.fitBounds(ptsBounds(pts), { padding: 60 });
-        }
-      });
-
-      document.getElementById('fit-all-btn').addEventListener('click', () => {
-        if (allBounds) map.fitBounds(allBounds, { padding: 40 });
-      });
-
-      resolve();
-    });
-  });
+  const routePts = routeRaw.map(p => [p.lat, p.lon]);
+  initMap(routePts);
+  buildFilmStrip();
+  navigate(0);
 }
 
-/* ── Day strip ────────────────────────────────────────────── */
+/* ── EOC dark theme transforms (from existing 2026 page) ──── */
 
-function buildDayStrip() {
-  $dayRow.innerHTML = '';
+function deepClone(v) { return JSON.parse(JSON.stringify(v)); }
 
-  const allChip = document.createElement('div');
-  allChip.className = 'day-chip all-chip';
-  allChip.dataset.view = 'all';
-  allChip.innerHTML = `
-    <span class="chip-num">ALL</span>
-    <span class="chip-date">JUN 17–23</span>
-  `;
-  allChip.addEventListener('click', () => selectView(-1, true));
-  $dayRow.appendChild(allChip);
+const C = {
+  textColor:      '#ffffff',
+  mutedText:      '#cbd8e8',
+  haloColor:      '#334052',
+  roadMinor:      '#2c3036',
+  roadMajor:      '#2c3036',
+  roadCasing:     '#494e58',
+  highwayColor:   '#5a7299',
+  roadRail:       '#3c4561',
+  landColor:      '#424d5c',
+  parkColor:      '#283a32',
+  waterColor:     '#5f7481',
+  buildingColor:  '#38414e',
+  boundaryColor:  '#a3a0ab',
+  bgColor:        '#424d5c',
+  bldgOutline:    'rgba(22,27,33,0.55)',
+  surfaceOutline: 'rgba(255,255,255,0.05)',
+};
 
-  DAYS.forEach((d, i) => {
-    const parts = d.label.split('·');
-    const chip = document.createElement('div');
-    chip.className = 'day-chip';
-    chip.dataset.index = i;
-    chip.innerHTML = `
-      <span class="chip-num">${(parts[0] || '').trim()}</span>
-      <span class="chip-date">${(parts[1] || '').trim()}</span>
-      <span class="chip-route">${d.from.split(',')[0]} → ${d.to.split(',')[0]}</span>
-    `;
-    chip.addEventListener('click', () => selectView(i, true));
-    $dayRow.appendChild(chip);
-  });
-}
+function darkenStyle(style) {
+  const s = deepClone(style);
+  s.name = 'Road Trip Dark';
 
-/* ── Select view ──────────────────────────────────────────── */
+  const LABEL_SIZES = {
+    'label_city':         ['interpolate',['exponential',1.2],['zoom'],4,13,7,15,11,20],
+    'label_city_capital': ['interpolate',['exponential',1.2],['zoom'],4,14,7,16,11,22],
+    'label_town':         ['interpolate',['exponential',1.2],['zoom'],7,14,11,16],
+    'label_village':      ['interpolate',['exponential',1.2],['zoom'],7,12,11,14],
+    'label_state':        ['interpolate',['linear'],          ['zoom'],5,12,8,16],
+  };
 
-function renderStops(stops) {
-  $stopsList.innerHTML = '';
-  stops.forEach((stop, idx) => {
-    const isLast = idx === stops.length - 1;
-    const row = document.createElement('div');
-    row.className = 'stop-item';
-    row.innerHTML = `
-      <div class="stop-line">
-        <div class="stop-dot ${stop.type}"></div>
-        ${!isLast ? '<div class="stop-connector"></div>' : ''}
-      </div>
-      <div class="stop-content">
-        <div class="stop-name">${stop.name}</div>
-        ${stop.desc ? `<div class="stop-desc">${stop.desc}</div>` : ''}
-      </div>
-    `;
-    $stopsList.appendChild(row);
-  });
-}
+  for (const layer of s.layers) {
+    const id  = layer.id || '';
+    const typ = layer.type;
+    const src = layer.source || '';
+    if (!layer.paint) layer.paint = {};
+    if (!layer.layout) layer.layout = {};
 
-function selectView(index, fitMap) {
-  currentView = Math.max(-1, Math.min(index, DAYS.length - 1));
-  const chips = $dayRow.querySelectorAll('.day-chip');
-
-  if (currentView === -1) {
-    // ── Full trip overview ──────────────────────────────────
-    if (map) {
-      trackPts.forEach((_, i) => {
-        map.setPaintProperty(`track-${i}`, 'line-color', '#c8893a');
-        map.setPaintProperty(`track-${i}`, 'line-width', 2.5);
-        map.setPaintProperty(`track-${i}`, 'line-opacity', 0.72);
-      });
-      if (fitMap && allBounds) map.fitBounds(allBounds, { padding: 40 });
+    if (typ === 'background') {
+      layer.paint['background-color'] = C.bgColor;
+      continue;
     }
-
-    $dayCounter.textContent = 'ALL 7 DAYS';
-
-    $dayLabel.textContent = TRIP_OVERVIEW.label;
-
-    $routeSumm.innerHTML =
-      `<span style="color:var(--cream)">Charlottesville, VA</span>` +
-      `<span style="color:var(--dim)"> → </span>` +
-      `<span style="color:var(--cream)">Independence, CA</span>` +
-      `<span style="color:var(--dim)"> → </span>` +
-      `<span style="color:var(--cream)">Charlottesville, VA</span>`;
-
-    $routeNote.textContent = TRIP_OVERVIEW.note;
-
-    renderStops(TRIP_OVERVIEW.stops);
-
-    const total = trackPts.reduce((sum, pts) =>
-      sum + (pts?.length > 1 ? trackMiles(pts) : 0), 0);
-    $distInfo.textContent = total > 0 ? `~${total.toLocaleString()} mi total` : '';
-
-    chips.forEach((el, i) => el.classList.toggle('active', i === 0));
-    chips[0]?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
-
-  } else {
-    // ── Single day ─────────────────────────────────────────
-    const day = DAYS[currentView];
-
-    if (map) {
-      trackPts.forEach((_, i) => {
-        const active = i === currentView;
-        map.setPaintProperty(`track-${i}`, 'line-color',   active ? '#c8893a' : '#5a3a18');
-        map.setPaintProperty(`track-${i}`, 'line-width',   active ? 3.5 : 1.5);
-        map.setPaintProperty(`track-${i}`, 'line-opacity', active ? 0.92 : 0.35);
-        if (active) map.moveLayer(`track-${i}`);
-      });
-      if (fitMap) {
-        const pts = trackPts[currentView];
-        if (pts?.length) map.fitBounds(ptsBounds(pts), { padding: 80 });
+    if (typ === 'fill') {
+      const isWater  = id.includes('water') || src.includes('water');
+      const isPark   = id.includes('park') || id.includes('natural') || id.includes('forest') || id.includes('landuse_grass');
+      const isBldg   = id.includes('building');
+      if (isWater)  layer.paint['fill-color'] = C.waterColor;
+      else if (isPark)   layer.paint['fill-color'] = C.parkColor;
+      else if (isBldg) { layer.paint['fill-color'] = C.buildingColor; layer.paint['fill-outline-color'] = C.bldgOutline; }
+      else              layer.paint['fill-color'] = C.landColor;
+      if (layer.paint['fill-opacity'] !== undefined && !isBldg) layer.paint['fill-opacity'] = 1;
+      continue;
+    }
+    if (typ === 'line') {
+      const isWater  = id.includes('water');
+      const isRail   = id.includes('rail') || id.includes('transit');
+      const isCasing = id.includes('casing') || id.includes('outline') || id.includes('border') || id.includes('bridge');
+      const isBoundary = id.includes('boundary') || id.includes('admin');
+      const isHighway  = id.includes('highway') || id.includes('motorway') || id.includes('trunk') || id.includes('primary');
+      const isMajor    = id.includes('road_major') || id.includes('secondary');
+      const isSurface  = id.includes('surface') || id.includes('path') || id.includes('footway') || id.includes('cycleway');
+      if (isWater)     layer.paint['line-color'] = C.waterColor;
+      else if (isBoundary) layer.paint['line-color'] = C.boundaryColor;
+      else if (isRail)     layer.paint['line-color'] = C.roadRail;
+      else if (isCasing)   layer.paint['line-color'] = C.roadCasing;
+      else if (isHighway)  layer.paint['line-color'] = C.highwayColor;
+      else if (isMajor)    layer.paint['line-color'] = C.roadMajor;
+      else if (isSurface)  layer.paint['line-color'] = C.surfaceOutline;
+      else                 layer.paint['line-color'] = C.roadMinor;
+      continue;
+    }
+    if (typ === 'symbol') {
+      if (layer.paint['text-color'] !== undefined) {
+        const isMuted = id.includes('road') || id.includes('housenumber') || id.includes('poi') || id.includes('transit');
+        layer.paint['text-color'] = isMuted ? C.mutedText : C.textColor;
+        layer.paint['text-halo-color'] = C.haloColor;
+        layer.paint['text-halo-width'] = 1;
+      }
+      if (LABEL_SIZES[id] && layer.layout['text-size'] !== undefined) {
+        layer.layout['text-size'] = LABEL_SIZES[id];
       }
     }
+  }
+  return s;
+}
 
-    $dayCounter.textContent = `DAY ${currentView + 1} OF 7`;
+/* ── Map ────────────────────────────────────────────────────── */
 
-    $dayLabel.textContent = day.label;
+function initMap(routePts) {
+  fetch('https://tiles.openfreemap.org/styles/liberty')
+    .then(r => r.json())
+    .then(style => {
+      const dark = darkenStyle(style);
 
-    $routeSumm.innerHTML =
-      `<span style="color:var(--cream)">${day.from}</span>` +
-      `<span style="color:var(--dim)"> → </span>` +
-      `<span style="color:var(--cream)">${day.to}</span>`;
+      map = new maplibregl.Map({
+        container: 'map-container',
+        style: dark,
+        center: [-96, 38],
+        zoom: 3,
+        interactive: false,
+        attributionControl: true,
+      });
 
-    $routeNote.textContent = day.note;
+      map.on('load', () => {
+        mapReady = true;
 
-    renderStops(day.stops);
+        if (routePts.length > 1) {
+          map.addSource('route', {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              geometry: {
+                type: 'LineString',
+                coordinates: routePts.map(p => [p[1], p[0]]),
+              },
+            },
+          });
+          map.addLayer({
+            id: 'route-line',
+            type: 'line',
+            source: 'route',
+            paint: {
+              'line-color': '#c8893a',
+              'line-width': 2,
+              'line-opacity': 0.75,
+            },
+          });
 
-    const pts = trackPts[currentView];
-    $distInfo.textContent = pts?.length > 1 ? `~${trackMiles(pts).toLocaleString()} mi` : '';
+          const lons = routePts.map(p => p[1]);
+          const lats = routePts.map(p => p[0]);
+          map.fitBounds(
+            [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]],
+            { padding: 20, animate: false }
+          );
+        }
 
-    // chips[0] = ALL chip, chips[1–7] = days
-    chips.forEach((el, i) => el.classList.toggle('active', i === currentView + 1));
-    const activeChip = chips[currentView + 1];
-    if (activeChip) {
-      $dayRow.scrollLeft = activeChip.offsetLeft - ($dayRow.clientWidth / 2) + (activeChip.offsetWidth / 2);
-    }
+        map.addSource('photo-pt', {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: { type: 'Point', coordinates: [0, 0] } },
+        });
+        map.addLayer({
+          id: 'photo-dot',
+          type: 'circle',
+          source: 'photo-pt',
+          paint: {
+            'circle-radius': 6,
+            'circle-color': '#ff7040',
+            'circle-stroke-color': '#fffef8',
+            'circle-stroke-width': 2,
+          },
+        });
+
+        placeMarkerForCurrent();
+      });
+    })
+    .catch(() => {
+      map = null;
+    });
+}
+
+function placeMarkerForCurrent() {
+  if (!mapReady || !map) return;
+  const entry = catalog[currentIndex];
+  if (!entry || entry.lat == null || entry.lon == null) return;
+
+  const src = map.getSource('photo-pt');
+  if (src) {
+    src.setData({ type: 'Feature', geometry: { type: 'Point', coordinates: [entry.lon, entry.lat] } });
   }
 }
 
-/* ── Keyboard ─────────────────────────────────────────────── */
+/* ── Film strip ──────────────────────────────────────────────── */
+
+function buildFilmStrip() {
+  $thumbRow.innerHTML = '';
+  let lastDay = null;
+
+  catalog.forEach((entry, i) => {
+    if (entry.day !== lastDay) {
+      if (lastDay !== null) {
+        const sep = document.createElement('div');
+        sep.className = 'thumb-day-sep';
+        $thumbRow.appendChild(sep);
+      }
+      lastDay = entry.day;
+    }
+
+    const item = document.createElement('div');
+    item.className = 'thumb-item';
+    item.dataset.index = i;
+
+    const img = document.createElement('img');
+    img.className = 'thumb-img';
+    img.src = 'thumbs/' + entry.filename.replace(/\.[^.]+$/, '.jpg');
+    img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    item.appendChild(img);
+
+    if (highlights.has(entry.filename)) {
+      const s = document.createElement('span');
+      s.style.cssText = 'position:absolute;top:1px;right:2px;color:var(--star);font-size:12px;line-height:1;text-shadow:0 0 4px rgba(0,0,0,0.8);';
+      s.textContent = '★';
+      item.appendChild(s);
+    }
+
+    if (entry.is_video) {
+      const v = document.createElement('span');
+      v.style.cssText = 'position:absolute;top:2px;left:3px;font-size:10px;color:rgba(255,255,255,0.65);';
+      v.textContent = '▶';
+      item.appendChild(v);
+    }
+
+    if (notes[entry.filename]) {
+      const dot = document.createElement('span');
+      dot.className = 'thumb-note';
+      item.appendChild(dot);
+    }
+
+    item.addEventListener('click', () => navigate(i));
+    $thumbRow.appendChild(item);
+  });
+}
+
+/* ── Notes ───────────────────────────────────────────────────── */
+
+function openNotes() {
+  notesMode = true;
+  const entry = catalog[currentIndex];
+  $notesItemName.textContent = entry ? (entry.location || entry.filename) : '';
+  $notesTextarea.value = entry ? (notes[entry.filename] || '') : '';
+  $notesSaved.textContent = '';
+  $notesOverlay.style.display = 'flex';
+  $notesTextarea.focus();
+}
+
+function closeNotes() {
+  notesMode = false;
+  $notesOverlay.style.display = 'none';
+}
+
+function toggleNotes() { notesMode ? closeNotes() : openNotes(); }
+
+function saveCurrentNote() {
+  const entry = catalog[currentIndex];
+  if (!entry) return;
+  const val = $notesTextarea.value.trim();
+  if (val) { notes[entry.filename] = $notesTextarea.value; }
+  else { delete notes[entry.filename]; }
+  try { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); } catch(e) {}
+  updateNoteIndicator();
+  updateThumbNoteIndicator(currentIndex);
+}
+
+function updateNoteIndicator() {
+  const entry = catalog[currentIndex];
+  $noteIndicator.style.display = (entry && notes[entry.filename]) ? 'inline' : 'none';
+}
+
+function updateThumbNoteIndicator(i) {
+  const items = $thumbRow.querySelectorAll('.thumb-item');
+  const el = items[i];
+  if (!el) return;
+  const existing = el.querySelector('.thumb-note');
+  const hasNote = !!(catalog[i] && notes[catalog[i].filename]);
+  if (hasNote && !existing) {
+    const dot = document.createElement('span');
+    dot.className = 'thumb-note';
+    el.appendChild(dot);
+  } else if (!hasNote && existing) {
+    existing.remove();
+  }
+}
+
+function openExport() {
+  const items = Object.entries(notes).filter(([,v]) => v.trim());
+  if (!items.length) {
+    $exportText.value = '(no notes yet)';
+  } else {
+    const lines = ['NOTES EXPORT — 2026 Road Trip\n'];
+    for (const [filename, text] of items) {
+      const entry = catalog.find(e => e.filename === filename);
+      const loc = entry ? entry.location : '';
+      lines.push(`${filename}${loc ? '  |  ' + loc : ''}`);
+      lines.push(text.trim());
+      lines.push('---');
+    }
+    $exportText.value = lines.join('\n');
+  }
+  $exportCopyDone.style.display = 'none';
+  $exportOverlay.style.display = 'flex';
+  $exportText.select();
+}
+
+function closeExport() { $exportOverlay.style.display = 'none'; }
+
+$notesTextarea.addEventListener('input', () => {
+  $notesSaved.textContent = '';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    saveCurrentNote();
+    $notesSaved.textContent = 'saved';
+    setTimeout(() => { $notesSaved.textContent = ''; }, 1500);
+  }, 600);
+});
+
+$exportCopyBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText($exportText.value).then(() => {
+    $exportCopyDone.style.display = 'inline';
+    setTimeout(() => { $exportCopyDone.style.display = 'none'; }, 2000);
+  }).catch(() => { $exportText.select(); document.execCommand('copy'); });
+});
+
+$exportCloseBtn.addEventListener('click', closeExport);
+
+/* ── Navigation ──────────────────────────────────────────────── */
+
+function navigate(index) {
+  currentIndex = Math.max(0, Math.min(index, catalog.length - 1));
+  if (notesMode) {
+    const entry = catalog[currentIndex];
+    $notesItemName.textContent = entry ? (entry.location || entry.filename) : '';
+    $notesTextarea.value = entry ? (notes[entry.filename] || '') : '';
+    $notesSaved.textContent = '';
+    $notesTextarea.focus();
+  }
+  updateDisplay();
+}
+
+function updateDisplay() {
+  const entry = catalog[currentIndex];
+  if (!entry) return;
+
+  const isVid  = !!entry.is_video;
+  const isHigh = highlights.has(entry.filename);
+  const day    = dayIndex[entry.day];
+  const dt     = fmtDate(entry.timestamp);
+
+  $counter.firstChild.textContent = `${currentIndex + 1} / ${catalog.length}`;
+
+  if (isVid) {
+    $img.style.display = 'none';
+    $video.style.display = 'block';
+    $video.src = entry.filename;
+    $video.play().catch(() => {});
+  } else {
+    $video.pause();
+    $video.removeAttribute('src');
+    $video.style.display = 'none';
+    $img.style.display = 'block';
+    $img.src = entry.filename;
+  }
+
+  $capLoc.textContent  = entry.location || '';
+  $capDate.textContent = dt;
+  $star.style.display  = isHigh ? 'block' : 'none';
+
+  $dayBadge.textContent  = day ? day.label : '';
+  $locText.textContent   = entry.location || '';
+  $dateText.textContent  = dt;
+  $coordsTxt.textContent = fmtCoords(entry.lat, entry.lon);
+  $vidBadge.style.display = isVid ? 'block' : 'none';
+  $desc.textContent      = entry.description || '';
+  const np = entry.now_playing || '';
+  $nowPlaying.textContent = np;
+  $nowPlaying.style.display = np ? 'block' : 'none';
+  $daySumm.textContent   = '';
+
+  placeMarkerForCurrent();
+
+  [-2, -1, 1, 2, 3].forEach(offset => {
+    const e = catalog[currentIndex + offset];
+    if (e && !e.is_video) { new Image().src = e.filename; }
+  });
+
+  const items = $thumbRow.querySelectorAll('.thumb-item');
+  items.forEach((el, i) => el.classList.toggle('active', i === currentIndex));
+  const active = items[currentIndex];
+  if (active) {
+    $thumbRow.scrollLeft = active.offsetLeft - ($thumbRow.clientWidth / 2) + (active.offsetWidth / 2);
+  }
+
+  updateNoteIndicator();
+}
+
+/* ── Keyboard ────────────────────────────────────────────────── */
 
 document.addEventListener('keydown', e => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'Escape') {
+    if ($exportOverlay.style.display !== 'none') { closeExport(); return; }
+    if (notesMode) { closeNotes(); return; }
+  }
+  if (e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'n' || e.key === 'N') { e.preventDefault(); toggleNotes(); return; }
+  if (e.key === 'e' || e.key === 'E') {
+    if (notesMode || $exportOverlay.style.display !== 'none') { e.preventDefault(); openExport(); return; }
+  }
+  if (e.target.tagName === 'INPUT') return;
   if (e.key === 'ArrowRight' || e.key === ' ') {
-    e.preventDefault();
-    selectView(currentView + 1, true);
+    e.preventDefault(); navigate(currentIndex + 1);
   } else if (e.key === 'ArrowLeft') {
-    e.preventDefault();
-    selectView(currentView - 1, true);
+    e.preventDefault(); navigate(currentIndex - 1);
   } else if (e.key === 'Home') {
-    e.preventDefault();
-    selectView(-1, true);
+    e.preventDefault(); navigate(0);
   } else if (e.key === 'End') {
-    e.preventDefault();
-    selectView(DAYS.length - 1, true);
+    e.preventDefault(); navigate(catalog.length - 1);
   }
 });
 
-document.getElementById('btn-prev').addEventListener('click', () => selectView(currentView - 1, true));
-document.getElementById('btn-next').addEventListener('click', () => selectView(currentView + 1, true));
+document.getElementById('btn-prev').addEventListener('click', () => navigate(currentIndex - 1));
+document.getElementById('btn-next').addEventListener('click', () => navigate(currentIndex + 1));
 
-/* ── Boot ─────────────────────────────────────────────────── */
+/* ── Boot ────────────────────────────────────────────────────── */
 
 init().catch(err => {
   document.body.innerHTML = `<div style="color:#c8893a;padding:40px;font-family:Georgia;font-size:16px;">
     Failed to load: ${err.message}<br><br>
-    Open this file through a local server, e.g.<br>
-    <code>python -m http.server 8080</code><br>
-    then visit <code>http://localhost:8080</code>
+    Serve from a local HTTP server:<br>
+    <code>python -m http.server 8080</code>
   </div>`;
 });
 </script>
